@@ -1,4 +1,4 @@
-const GE_OVEN_CARD_VERSION = '1.3.0';
+const GE_OVEN_CARD_VERSION = '1.3.1';
 console.log(`GE Oven Card v${GE_OVEN_CARD_VERSION}: loading...`);
 
 class GeOvenCard extends HTMLElement {
@@ -278,30 +278,18 @@ class GeOvenCard extends HTMLElement {
         .heat-element.top { animation-delay: 0s; }
         .heat-element.bottom { animation-delay: 1s; }
 
-        /* Mode chips inside window */
-        .window-modes {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 4px;
-          justify-content: center;
-          align-items: center;
+        /* Window status (only shown when active) */
+        .window-status {
           flex: 1;
-          padding: 4px 0;
-        }
-        .mode-chip {
-          font-size: 10px;
-          padding: 3px 8px;
-          border-radius: 10px;
-          background: rgba(255,255,255,0.08);
-          color: #aaa;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 18px;
+          font-weight: 600;
+          color: #ff8833;
+          text-shadow: 0 0 12px rgba(255, 136, 51, 0.5);
           text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-        .mode-chip.active {
-          background: rgba(255, 153, 68, 0.25);
-          color: #ffaa55;
-          border: 1px solid rgba(255, 153, 68, 0.4);
-          text-shadow: 0 0 4px rgba(255, 153, 68, 0.3);
+          letter-spacing: 3px;
         }
 
         /* === ATTRIBUTE PANEL (compact) === */
@@ -392,14 +380,10 @@ class GeOvenCard extends HTMLElement {
           <!-- Handle (above window) -->
           <div class="handle-bar"></div>
 
-          <!-- Oven Window with mode chips inside -->
+          <!-- Oven Window -->
           <div class="oven-window ${isActive ? 'active' : ''}">
             <div class="heat-element top"></div>
-            <div class="window-modes">
-              ${opList.filter(m => m !== 'Off').map(m =>
-                `<span class="mode-chip ${m === opMode ? 'active' : ''}">${m}</span>`
-              ).join('')}
-            </div>
+            ${isActive ? `<div class="window-status">${opMode}</div>` : '<div style="flex:1"></div>'}
             <div class="heat-element bottom"></div>
           </div>
 
