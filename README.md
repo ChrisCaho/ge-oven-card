@@ -5,7 +5,9 @@
 
 A custom Lovelace card for GE Profile ovens connected via the [SmartHQ](https://www.geappliances.com/connect) integration.
 
-Displays oven status with a blue LCD digital display, animated oven window with heating elements, and full attribute readout. Supports GE TwinFlex dual-cavity ovens with configurable door sizes.
+Designed to look like a GE Profile oven with a blue LCD digital display, door frame with handle, oven window with animated heating elements, and a compact attribute panel. Supports single ovens, double ovens, and GE TwinFlex triple-cavity configurations.
+
+![GE Oven Card](screenshot.jpg)
 
 ## Installation
 
@@ -23,10 +25,12 @@ Displays oven status with a blue LCD digital display, animated oven window with 
 
 ## Configuration
 
+Each oven cavity gets its own card. Add one card per `water_heater` entity.
+
 ```yaml
 type: custom:ge-oven-card
-entity: water_heater.hasvr1_ge_top_oven
-name: "Top Oven"
+entity: water_heater.hasvr1_ge_bottom_oven
+name: "Bottom Oven"
 size: normal
 ```
 
@@ -38,29 +42,56 @@ size: normal
 
 ### Size Options
 
-| Size     | Use Case                                    |
-|----------|---------------------------------------------|
-| `normal` | Standard single oven (full-size door)       |
-| `medium` | Lower cavity of a TwinFlex (~2/3 height)    |
-| `small`  | Upper cavity of a TwinFlex (~1/3 height)    |
+| Size     | Door Height | Use Case                                    |
+|----------|-------------|---------------------------------------------|
+| `normal` | Full        | Standard single oven or double oven cavity  |
+| `medium` | 2/3         | Lower cavity of a TwinFlex                  |
+| `small`  | 1/3         | Upper cavity of a TwinFlex                  |
 
-The LCD display stays the same size across all options — only the oven door/window scales.
+The LCD display and attribute panel stay the same size across all options — only the oven door/window scales.
 
-### Example: Triple-Cavity GE Profile Oven
+### Example Configurations
 
+**Single oven:**
+```yaml
+type: custom:ge-oven-card
+entity: water_heater.ge_oven
+name: "Oven"
+size: normal
+```
+
+**Double oven (two full-size cavities):**
+```yaml
+# Upper oven
+type: custom:ge-oven-card
+entity: water_heater.ge_upper_oven
+name: "Upper Oven"
+size: normal
+```
+```yaml
+# Lower oven
+type: custom:ge-oven-card
+entity: water_heater.ge_lower_oven
+name: "Lower Oven"
+size: normal
+```
+
+**Triple-cavity GE Profile TwinFlex:**
 ```yaml
 # Top oven (small TwinFlex cavity)
 type: custom:ge-oven-card
 entity: water_heater.hasvr1_ge_top_oven
 name: "Top Oven"
 size: small
-
+```
+```yaml
 # Middle oven (medium TwinFlex cavity)
 type: custom:ge-oven-card
 entity: water_heater.hasvr1_ge_middle_oven
 name: "Middle Oven"
 size: medium
-
+```
+```yaml
 # Bottom oven (full-size single cavity)
 type: custom:ge-oven-card
 entity: water_heater.hasvr1_ge_bottom_oven
@@ -70,26 +101,29 @@ size: normal
 
 ## Features
 
-- Blue LCD digital display showing temperature and cooking mode
-- Oven window with animated heating elements when active
-- Probe indicator (when probe is connected)
-- All entity attributes displayed (current/target/display/raw temps, range, probe status)
-- Available cooking mode chips
-- Pulsing heat glow animation when oven is on
-- Configurable door size for TwinFlex dual-cavity ovens
+- **Blue LCD digital display** with CRT scanline effect showing current temperature, target temperature, and cooking mode
+- **Door frame** with handle wrapping the oven window and attribute panel
+- **Oven window** with orange glow and animated heating elements when active — displays the active cooking mode (Bake, Broil, Air Fry, Convection Roast, etc.)
+- **Pulsing heat glow animation** when oven is heating
+- **Dark window** when oven is off (no clutter)
+- **Compact attribute grid** showing all entity data
+- **Probe indicator** when a temperature probe is connected
+- **Configurable door size** for TwinFlex and other multi-cavity ovens
 
 ## Entity Attributes Displayed
 
-| Attribute             | Location        |
-|-----------------------|-----------------|
-| `current_temperature` | LCD + grid      |
-| `temperature` (target)| LCD + grid      |
-| `operation_mode`      | LCD + window    |
-| `display_state`       | LCD             |
-| `display_temperature` | Grid            |
-| `raw_temperature`     | Grid            |
-| `min_temp` / `max_temp`| Grid (range)   |
-| `probe_present`       | LCD + grid      |
+All attributes from the SmartHQ `water_heater` entity are shown:
+
+| Attribute             | Location              |
+|-----------------------|-----------------------|
+| `current_temperature` | LCD (large) + grid    |
+| `temperature` (target)| LCD (SET) + grid      |
+| `operation_mode`      | LCD + oven window     |
+| `display_state`       | LCD (when off)        |
+| `display_temperature` | Grid                  |
+| `raw_temperature`     | Grid                  |
+| `min_temp` / `max_temp`| Grid (range)         |
+| `probe_present`       | LCD (PROBE) + grid    |
 
 ## Compatibility
 
@@ -97,10 +131,12 @@ size: normal
 - **Home Assistant**: 2024.1+
 - **HACS**: Compatible as custom repository
 
-## Screenshot
+## Notes
 
-![GE Oven Card](screenshot.png)
+- The SmartHQ integration exposes GE ovens as `water_heater` entities — this is by design from the integration author, not a bug.
+- Cooking modes (Bake, Broil, Air Fry, Convection Bake, Convection Roast, Conv. Multi-Bake, etc.) are determined by what each oven cavity supports and are reported by SmartHQ.
+- When the oven is off, `display_temperature` and `target` show "--" instead of 0.
 
 ## License
 
-This project is released into the public domain under [The Unlicense](LICENSE). See the LICENSE file for details.
+This is free and unencumbered software released into the public domain under [The Unlicense](LICENSE).

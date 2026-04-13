@@ -1,4 +1,4 @@
-const GE_OVEN_CARD_VERSION = '1.4.0';
+const GE_OVEN_CARD_VERSION = '1.5.0';
 console.log(`GE Oven Card v${GE_OVEN_CARD_VERSION}: loading...`);
 
 class GeOvenCard extends HTMLElement {
