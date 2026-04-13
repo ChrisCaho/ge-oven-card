@@ -1,4 +1,4 @@
-const GE_OVEN_CARD_VERSION = '1.1.0';
+const GE_OVEN_CARD_VERSION = '1.2.0';
 console.log(`GE Oven Card v${GE_OVEN_CARD_VERSION}: loading...`);
 
 class GeOvenCard extends HTMLElement {
@@ -134,7 +134,7 @@ class GeOvenCard extends HTMLElement {
           box-shadow: inset 0 2px 8px rgba(0,0,0,0.8);
         }
         .lcd-screen {
-          background: linear-gradient(180deg, #0a1a0a 0%, #0d250d 50%, #0a1a0a 100%);
+          background: linear-gradient(180deg, #080a1a 0%, #0d1025 50%, #080a1a 100%);
           border-radius: 5px;
           padding: 14px 16px;
           position: relative;
@@ -145,7 +145,7 @@ class GeOvenCard extends HTMLElement {
           justify-content: center;
         }
         .lcd-screen.active {
-          background: linear-gradient(180deg, #0a1a08 0%, #132a10 50%, #0a1a08 100%);
+          background: linear-gradient(180deg, #080a1a 0%, #101830 50%, #080a1a 100%);
         }
         /* CRT scanline effect */
         .lcd-screen::before {
@@ -176,50 +176,50 @@ class GeOvenCard extends HTMLElement {
           font-family: 'Courier New', 'Consolas', monospace;
           font-size: 48px;
           font-weight: 700;
-          color: #33ff33;
-          text-shadow: 0 0 12px rgba(51, 255, 51, 0.5);
+          color: #66bbff;
+          text-shadow: 0 0 12px rgba(102, 187, 255, 0.6);
           line-height: 1;
           letter-spacing: 2px;
         }
         .lcd-temp.off {
-          color: #2a5a2a;
-          text-shadow: none;
+          color: #4488bb;
+          text-shadow: 0 0 6px rgba(68, 136, 187, 0.3);
         }
         .lcd-degree {
           font-size: 24px;
-          color: #33ff33;
-          text-shadow: 0 0 8px rgba(51, 255, 51, 0.4);
+          color: #66bbff;
+          text-shadow: 0 0 8px rgba(102, 187, 255, 0.5);
           margin-left: 2px;
           vertical-align: super;
         }
         .lcd-degree.off {
-          color: #2a5a2a;
-          text-shadow: none;
+          color: #4488bb;
+          text-shadow: 0 0 4px rgba(68, 136, 187, 0.3);
         }
         .lcd-target {
           font-family: 'Courier New', 'Consolas', monospace;
           font-size: 22px;
-          color: #33dd33;
-          text-shadow: 0 0 8px rgba(51, 221, 51, 0.3);
-          opacity: 0.8;
+          color: #55aaee;
+          text-shadow: 0 0 8px rgba(85, 170, 238, 0.4);
+          opacity: 0.9;
         }
         .lcd-mode {
           font-family: 'Courier New', 'Consolas', monospace;
           font-size: 14px;
-          color: #33cc33;
-          text-shadow: 0 0 6px rgba(51, 204, 51, 0.3);
+          color: #5599dd;
+          text-shadow: 0 0 6px rgba(85, 153, 221, 0.4);
           text-transform: uppercase;
           letter-spacing: 1px;
         }
         .lcd-mode.off {
-          color: #1a4a1a;
-          text-shadow: none;
+          color: #3a6699;
+          text-shadow: 0 0 4px rgba(58, 102, 153, 0.2);
         }
         .lcd-status {
           font-family: 'Courier New', 'Consolas', monospace;
           font-size: 12px;
-          color: #2ab82a;
-          text-shadow: 0 0 4px rgba(42, 184, 42, 0.3);
+          color: #55aaee;
+          text-shadow: 0 0 4px rgba(85, 170, 238, 0.4);
         }
 
         /* === OVEN WINDOW === */
@@ -283,7 +283,7 @@ class GeOvenCard extends HTMLElement {
 
         .window-status {
           font-size: 14px;
-          color: #666;
+          color: #999;
           text-transform: uppercase;
           letter-spacing: 2px;
         }
@@ -320,13 +320,13 @@ class GeOvenCard extends HTMLElement {
           font-size: 10px;
           text-transform: uppercase;
           letter-spacing: 1px;
-          color: #666;
+          color: #999;
           margin-bottom: 2px;
         }
         .attr-value {
           font-size: 14px;
           font-weight: 500;
-          color: #ccc;
+          color: #e0e0e0;
         }
         .attr-value.highlight {
           color: #ff9944;
@@ -345,9 +345,9 @@ class GeOvenCard extends HTMLElement {
           color: #4caf50;
         }
         .probe-badge.inactive {
-          background: rgba(255,255,255,0.04);
-          border-color: rgba(255,255,255,0.08);
-          color: #555;
+          background: rgba(255,255,255,0.06);
+          border-color: rgba(255,255,255,0.12);
+          color: #999;
         }
 
         /* === MODES LIST === */
@@ -363,7 +363,7 @@ class GeOvenCard extends HTMLElement {
           padding: 3px 8px;
           border-radius: 10px;
           background: rgba(255,255,255,0.06);
-          color: #777;
+          color: #aaa;
           text-transform: uppercase;
           letter-spacing: 0.5px;
         }
