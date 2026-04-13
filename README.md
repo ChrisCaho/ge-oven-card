@@ -84,7 +84,7 @@ size: normal
 |-----------------------|-----------------|
 | `current_temperature` | LCD + grid      |
 | `temperature` (target)| LCD + grid      |
-| `operation_mode`      | LCD + mode chips|
+| `operation_mode`      | LCD + window    |
 | `display_state`       | LCD             |
 | `display_temperature` | Grid            |
 | `raw_temperature`     | Grid            |
@@ -96,6 +96,10 @@ size: normal
 - **Integration**: [SmartHQ / GE Home](https://github.com/simbaja/ha_gehome) (exposes ovens as `water_heater` entities)
 - **Home Assistant**: 2024.1+
 - **HACS**: Compatible as custom repository
+
+## Screenshot
+
+![GE Oven Card](screenshot.png)
 
 ## License
 

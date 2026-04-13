@@ -1,4 +1,4 @@
-const GE_OVEN_CARD_VERSION = '1.3.1';
+const GE_OVEN_CARD_VERSION = '1.4.0';
 console.log(`GE Oven Card v${GE_OVEN_CARD_VERSION}: loading...`);
 
 class GeOvenCard extends HTMLElement {
@@ -70,7 +70,6 @@ class GeOvenCard extends HTMLElement {
     const displayState = attrs.display_state || state;
     const minTemp = attrs.min_temp;
     const maxTemp = attrs.max_temp;
-    const opList = attrs.operation_list || [];
     const friendlyName = this._config.name || attrs.friendly_name || 'GE Oven';
 
     // Size configuration — window heights
@@ -81,6 +80,11 @@ class GeOvenCard extends HTMLElement {
     // Format display temperature for the LCD
     const lcdTemp = isActive && displayTemp ? `${displayTemp}` : (currentTemp != null ? `${currentTemp}` : '--');
     const lcdTarget = isActive && targetTemp ? `${targetTemp}°` : '';
+
+    // Format attribute values — show "--" for 0 or null when off
+    const fmtTemp = (v) => (v != null && (isActive || v !== 0)) ? `${v}°F` : '--';
+    const fmtDisplay = displayTemp != null && (isActive || displayTemp !== 0) ? `${displayTemp}°F` : '--';
+    const fmtTarget = targetTemp != null ? `${targetTemp}°F` : '--';
 
     this.shadowRoot.innerHTML = `
       <style>
@@ -128,7 +132,7 @@ class GeOvenCard extends HTMLElement {
           border: 2px solid #333;
           border-radius: 8px;
           padding: 3px;
-          margin-bottom: 10px;
+          margin-bottom: 16px;
           box-shadow: inset 0 2px 8px rgba(0,0,0,0.8);
         }
         .lcd-screen {
@@ -220,24 +224,31 @@ class GeOvenCard extends HTMLElement {
           text-shadow: 0 0 4px rgba(85, 170, 238, 0.4);
         }
 
-        /* === HANDLE (above window) === */
+        /* === DOOR FRAME (wraps handle + window + stats) === */
+        .door-frame {
+          border: 2px solid #3a3a40;
+          border-radius: 14px;
+          padding: 10px 8px 8px;
+          margin-bottom: 8px;
+          background: linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(0,0,0,0.1) 100%);
+        }
+
+        /* === HANDLE (top of door) === */
         .handle-bar {
-          width: 60%;
+          width: 55%;
           height: 6px;
-          background: linear-gradient(180deg, #555 0%, #333 50%, #444 100%);
+          background: linear-gradient(180deg, #666 0%, #444 40%, #555 100%);
           border-radius: 3px;
-          margin: 0 auto 8px;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+          margin: 0 auto 10px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
         }
 
         /* === OVEN WINDOW === */
         .oven-window {
-          background: linear-gradient(180deg, #111 0%, #1a1a1a 50%, #111 100%);
-          border: 3px solid #333;
-          border-radius: 12px;
-          margin: 0 8px 10px;
+          background: linear-gradient(180deg, #0a0a0c 0%, #141416 50%, #0a0a0c 100%);
+          border: 2px solid #2a2a2e;
+          border-radius: 10px;
           padding: ${windowPadding}px;
-          position: relative;
           min-height: ${windowHeight}px;
           display: flex;
           flex-direction: column;
@@ -292,12 +303,12 @@ class GeOvenCard extends HTMLElement {
           letter-spacing: 3px;
         }
 
-        /* === ATTRIBUTE PANEL (compact) === */
+        /* === ATTRIBUTE PANEL (compact, inside door) === */
         .attr-panel {
           display: grid;
           grid-template-columns: 1fr 1fr 1fr;
           gap: 4px;
-          padding: 0 4px;
+          margin-top: 8px;
         }
         .attr-item {
           background: rgba(255,255,255,0.04);
@@ -338,7 +349,7 @@ class GeOvenCard extends HTMLElement {
 
         /* === FOOTER === */
         .footer {
-          margin-top: 6px;
+          margin-top: 4px;
           padding: 4px 4px 0;
           border-top: 1px solid rgba(255,255,255,0.06);
           display: flex;
@@ -377,45 +388,48 @@ class GeOvenCard extends HTMLElement {
             </div>
           </div>
 
-          <!-- Handle (above window) -->
-          <div class="handle-bar"></div>
+          <!-- Door frame: handle + window + stats -->
+          <div class="door-frame">
+            <!-- Handle (top of door) -->
+            <div class="handle-bar"></div>
 
-          <!-- Oven Window -->
-          <div class="oven-window ${isActive ? 'active' : ''}">
-            <div class="heat-element top"></div>
-            ${isActive ? `<div class="window-status">${opMode}</div>` : '<div style="flex:1"></div>'}
-            <div class="heat-element bottom"></div>
-          </div>
+            <!-- Oven Window -->
+            <div class="oven-window ${isActive ? 'active' : ''}">
+              <div class="heat-element top"></div>
+              ${isActive ? `<div class="window-status">${opMode}</div>` : '<div style="flex:1"></div>'}
+              <div class="heat-element bottom"></div>
+            </div>
 
-          <!-- Attributes Grid (compact) -->
-          <div class="attr-panel">
-            <div class="attr-item">
-              <span class="attr-label">Current</span>
-              <span class="attr-value ${isActive ? 'highlight' : ''}">${currentTemp != null ? currentTemp + '°F' : '--'}</span>
-            </div>
-            <div class="attr-item">
-              <span class="attr-label">Target</span>
-              <span class="attr-value ${isActive ? 'highlight' : ''}">${targetTemp != null ? targetTemp + '°F' : '--'}</span>
-            </div>
-            <div class="attr-item">
-              <span class="attr-label">Display</span>
-              <span class="attr-value">${displayTemp != null ? displayTemp + '°F' : '--'}</span>
-            </div>
-            <div class="attr-item">
-              <span class="attr-label">Raw</span>
-              <span class="attr-value">${rawTemp != null ? rawTemp + '°F' : '--'}</span>
-            </div>
-            <div class="attr-item">
-              <span class="attr-label">Range</span>
-              <span class="attr-value">${minTemp}°–${maxTemp}°</span>
-            </div>
-            <div class="attr-item">
-              <span class="attr-label">Probe</span>
-              <span class="attr-value">
-                <span class="probe-badge ${probePresent ? 'active' : 'inactive'}">
-                  ${probePresent ? '● Yes' : '○ No'}
+            <!-- Attributes Grid (inside door) -->
+            <div class="attr-panel">
+              <div class="attr-item">
+                <span class="attr-label">Current</span>
+                <span class="attr-value ${isActive ? 'highlight' : ''}">${fmtTemp(currentTemp)}</span>
+              </div>
+              <div class="attr-item">
+                <span class="attr-label">Target</span>
+                <span class="attr-value ${isActive ? 'highlight' : ''}">${fmtTarget}</span>
+              </div>
+              <div class="attr-item">
+                <span class="attr-label">Display</span>
+                <span class="attr-value">${fmtDisplay}</span>
+              </div>
+              <div class="attr-item">
+                <span class="attr-label">Raw</span>
+                <span class="attr-value">${fmtTemp(rawTemp)}</span>
+              </div>
+              <div class="attr-item">
+                <span class="attr-label">Range</span>
+                <span class="attr-value">${minTemp}°–${maxTemp}°</span>
+              </div>
+              <div class="attr-item">
+                <span class="attr-label">Probe</span>
+                <span class="attr-value">
+                  <span class="probe-badge ${probePresent ? 'active' : 'inactive'}">
+                    ${probePresent ? '● Yes' : '○ No'}
+                  </span>
                 </span>
-              </span>
+              </div>
             </div>
           </div>
 
