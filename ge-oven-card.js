@@ -1,4 +1,4 @@
-const GE_OVEN_CARD_VERSION = '1.0.0';
+const GE_OVEN_CARD_VERSION = '1.1.0';
 console.log(`GE Oven Card v${GE_OVEN_CARD_VERSION}: loading...`);
 
 class GeOvenCard extends HTMLElement {
@@ -13,9 +13,14 @@ class GeOvenCard extends HTMLElement {
     if (!config.entity) {
       throw new Error('You need to define an "entity" (water_heater entity ID)');
     }
+    const size = (config.size || 'normal').toLowerCase();
+    if (!['normal', 'medium', 'small'].includes(size)) {
+      throw new Error('Invalid size: must be "normal", "medium", or "small"');
+    }
     this._config = {
       entity: config.entity,
       name: config.name || null,
+      size: size,
     };
   }
 
@@ -25,7 +30,8 @@ class GeOvenCard extends HTMLElement {
   }
 
   getCardSize() {
-    return 5;
+    const sizes = { normal: 5, medium: 4, small: 3 };
+    return sizes[this._config?.size] || 5;
   }
 
   static getConfigElement() {
@@ -33,7 +39,7 @@ class GeOvenCard extends HTMLElement {
   }
 
   static getStubConfig() {
-    return { entity: 'water_heater.ge_oven', name: 'GE Oven' };
+    return { entity: 'water_heater.ge_oven', name: 'GE Oven', size: 'normal' };
   }
 
   _render() {
@@ -66,6 +72,13 @@ class GeOvenCard extends HTMLElement {
     const maxTemp = attrs.max_temp;
     const opList = attrs.operation_list || [];
     const friendlyName = this._config.name || attrs.friendly_name || 'GE Oven';
+
+    // Size configuration
+    const size = this._config.size;
+    const windowHeight = { normal: 120, medium: 80, small: 40 }[size];
+    const windowPadding = { normal: 20, medium: 12, small: 6 }[size];
+    const windowMargin = { normal: 14, medium: 10, small: 6 }[size];
+    const handleMargin = { normal: 14, medium: 10, small: 8 }[size];
 
     // Format display temperature for the LCD
     const lcdTemp = isActive && displayTemp ? `${displayTemp}` : (currentTemp != null ? `${currentTemp}` : '--');
@@ -214,10 +227,10 @@ class GeOvenCard extends HTMLElement {
           background: linear-gradient(180deg, #111 0%, #1a1a1a 50%, #111 100%);
           border: 3px solid #333;
           border-radius: 12px;
-          margin: 0 8px 14px;
-          padding: 20px;
+          margin: 0 8px ${windowMargin}px;
+          padding: ${windowPadding}px;
           position: relative;
-          min-height: 60px;
+          min-height: ${windowHeight}px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -285,7 +298,7 @@ class GeOvenCard extends HTMLElement {
           height: 6px;
           background: linear-gradient(180deg, #555 0%, #333 50%, #444 100%);
           border-radius: 3px;
-          margin: 0 auto 14px;
+          margin: 0 auto ${handleMargin}px;
           box-shadow: 0 2px 4px rgba(0,0,0,0.4);
         }
 

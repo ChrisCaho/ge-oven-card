@@ -27,10 +27,21 @@ entity: water_heater.hasvr1_ge_top_oven
 name: "Top Oven"
 ```
 
-| Option   | Required | Description                        |
-|----------|----------|------------------------------------|
-| `entity` | Yes      | `water_heater` entity from SmartHQ |
-| `name`   | No       | Override display name              |
+| Option   | Required | Default  | Description                                         |
+|----------|----------|----------|-----------------------------------------------------|
+| `entity` | Yes      |          | `water_heater` entity from SmartHQ                  |
+| `name`   | No       |          | Override display name                               |
+| `size`   | No       | `normal` | Oven cavity size: `normal`, `medium`, or `small`    |
+
+### Size Options
+
+| Size     | Use Case                                    |
+|----------|---------------------------------------------|
+| `normal` | Standard single oven (full-size door)       |
+| `medium` | Lower cavity of a TwinFlex (~2/3 height)    |
+| `small`  | Upper cavity of a TwinFlex (~1/3 height)    |
+
+The LCD display stays the same size across all options — only the oven door/window scales.
 
 ## Features
 
