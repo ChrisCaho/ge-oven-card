@@ -1,4 +1,4 @@
-const GE_OVEN_CARD_VERSION = '1.2.1';
+const GE_OVEN_CARD_VERSION = '1.3.0';
 console.log(`GE Oven Card v${GE_OVEN_CARD_VERSION}: loading...`);
 
 class GeOvenCard extends HTMLElement {
@@ -30,8 +30,8 @@ class GeOvenCard extends HTMLElement {
   }
 
   getCardSize() {
-    const sizes = { normal: 5, medium: 4, small: 3 };
-    return sizes[this._config?.size] || 5;
+    const sizes = { normal: 6, medium: 5, small: 4 };
+    return sizes[this._config?.size] || 6;
   }
 
   static getConfigElement() {
@@ -73,12 +73,10 @@ class GeOvenCard extends HTMLElement {
     const opList = attrs.operation_list || [];
     const friendlyName = this._config.name || attrs.friendly_name || 'GE Oven';
 
-    // Size configuration
+    // Size configuration — window heights
     const size = this._config.size;
-    const windowHeight = { normal: 120, medium: 80, small: 40 }[size];
-    const windowPadding = { normal: 20, medium: 12, small: 6 }[size];
-    const windowMargin = { normal: 14, medium: 10, small: 6 }[size];
-    const handleMargin = { normal: 14, medium: 10, small: 8 }[size];
+    const windowHeight = { normal: 180, medium: 120, small: 60 }[size];
+    const windowPadding = { normal: 16, medium: 10, small: 6 }[size];
 
     // Format display temperature for the LCD
     const lcdTemp = isActive && displayTemp ? `${displayTemp}` : (currentTemp != null ? `${currentTemp}` : '--');
@@ -101,7 +99,7 @@ class GeOvenCard extends HTMLElement {
 
         /* === OVEN BODY === */
         .oven-body {
-          padding: 16px 16px 12px;
+          padding: 16px 16px 10px;
         }
 
         /* === TOP BAR (brand + name) === */
@@ -109,7 +107,7 @@ class GeOvenCard extends HTMLElement {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          margin-bottom: 12px;
+          margin-bottom: 10px;
         }
         .brand {
           font-size: 11px;
@@ -130,7 +128,7 @@ class GeOvenCard extends HTMLElement {
           border: 2px solid #333;
           border-radius: 8px;
           padding: 3px;
-          margin-bottom: 14px;
+          margin-bottom: 10px;
           box-shadow: inset 0 2px 8px rgba(0,0,0,0.8);
         }
         .lcd-screen {
@@ -222,34 +220,34 @@ class GeOvenCard extends HTMLElement {
           text-shadow: 0 0 4px rgba(85, 170, 238, 0.4);
         }
 
+        /* === HANDLE (above window) === */
+        .handle-bar {
+          width: 60%;
+          height: 6px;
+          background: linear-gradient(180deg, #555 0%, #333 50%, #444 100%);
+          border-radius: 3px;
+          margin: 0 auto 8px;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+        }
+
         /* === OVEN WINDOW === */
         .oven-window {
           background: linear-gradient(180deg, #111 0%, #1a1a1a 50%, #111 100%);
           border: 3px solid #333;
           border-radius: 12px;
-          margin: 0 8px ${windowMargin}px;
+          margin: 0 8px 10px;
           padding: ${windowPadding}px;
           position: relative;
           min-height: ${windowHeight}px;
           display: flex;
-          align-items: center;
-          justify-content: center;
+          flex-direction: column;
+          justify-content: space-between;
           box-shadow: inset 0 4px 16px rgba(0,0,0,0.6);
         }
         .oven-window.active {
           background: linear-gradient(180deg, #1a0800 0%, #2d1000 30%, #3a1500 50%, #2d1000 70%, #1a0800 100%);
           border-color: #553300;
           box-shadow: inset 0 0 30px rgba(255, 100, 0, 0.15), inset 0 4px 16px rgba(0,0,0,0.4);
-        }
-        .window-inner {
-          border: 1px solid #2a2a2a;
-          border-radius: 8px;
-          width: 100%;
-          padding: 16px;
-          text-align: center;
-        }
-        .oven-window.active .window-inner {
-          border-color: #442200;
         }
 
         /* Heating glow animation */
@@ -267,7 +265,6 @@ class GeOvenCard extends HTMLElement {
           height: 3px;
           background: linear-gradient(90deg, transparent 0%, #ff4400 20%, #ff6600 50%, #ff4400 80%, transparent 100%);
           border-radius: 2px;
-          margin: 6px 0;
           opacity: 0.6;
         }
         .oven-window.active .heat-element {
@@ -281,50 +278,55 @@ class GeOvenCard extends HTMLElement {
         .heat-element.top { animation-delay: 0s; }
         .heat-element.bottom { animation-delay: 1s; }
 
-        .window-status {
-          font-size: 14px;
-          color: #999;
+        /* Mode chips inside window */
+        .window-modes {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 4px;
+          justify-content: center;
+          align-items: center;
+          flex: 1;
+          padding: 4px 0;
+        }
+        .mode-chip {
+          font-size: 10px;
+          padding: 3px 8px;
+          border-radius: 10px;
+          background: rgba(255,255,255,0.08);
+          color: #aaa;
           text-transform: uppercase;
-          letter-spacing: 2px;
+          letter-spacing: 0.5px;
         }
-        .oven-window.active .window-status {
-          color: #ff8833;
-          text-shadow: 0 0 8px rgba(255, 136, 51, 0.3);
-        }
-
-        /* === HANDLE === */
-        .handle-bar {
-          width: 60%;
-          height: 6px;
-          background: linear-gradient(180deg, #555 0%, #333 50%, #444 100%);
-          border-radius: 3px;
-          margin: 0 auto ${handleMargin}px;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+        .mode-chip.active {
+          background: rgba(255, 153, 68, 0.25);
+          color: #ffaa55;
+          border: 1px solid rgba(255, 153, 68, 0.4);
+          text-shadow: 0 0 4px rgba(255, 153, 68, 0.3);
         }
 
-        /* === ATTRIBUTE PANEL === */
+        /* === ATTRIBUTE PANEL (compact) === */
         .attr-panel {
           display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 8px;
+          grid-template-columns: 1fr 1fr 1fr;
+          gap: 4px;
           padding: 0 4px;
         }
         .attr-item {
           background: rgba(255,255,255,0.04);
-          border-radius: 8px;
-          padding: 8px 10px;
+          border-radius: 6px;
+          padding: 4px 6px;
           display: flex;
           flex-direction: column;
         }
         .attr-label {
-          font-size: 10px;
+          font-size: 8px;
           text-transform: uppercase;
-          letter-spacing: 1px;
+          letter-spacing: 0.5px;
           color: #999;
-          margin-bottom: 2px;
+          margin-bottom: 1px;
         }
         .attr-value {
-          font-size: 14px;
+          font-size: 12px;
           font-weight: 500;
           color: #e0e0e0;
         }
@@ -336,47 +338,20 @@ class GeOvenCard extends HTMLElement {
         .probe-badge {
           display: inline-flex;
           align-items: center;
-          gap: 4px;
-          background: rgba(76, 175, 80, 0.15);
-          border: 1px solid rgba(76, 175, 80, 0.3);
-          border-radius: 12px;
-          padding: 2px 8px;
-          font-size: 11px;
+          gap: 3px;
+          font-size: 10px;
+        }
+        .probe-badge.active {
           color: #4caf50;
         }
         .probe-badge.inactive {
-          background: rgba(255,255,255,0.06);
-          border-color: rgba(255,255,255,0.12);
           color: #999;
-        }
-
-        /* === MODES LIST === */
-        .modes-row {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 4px;
-          margin-top: 10px;
-          padding: 0 4px;
-        }
-        .mode-chip {
-          font-size: 10px;
-          padding: 3px 8px;
-          border-radius: 10px;
-          background: rgba(255,255,255,0.06);
-          color: #aaa;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-        .mode-chip.active {
-          background: rgba(255, 153, 68, 0.2);
-          color: #ff9944;
-          border: 1px solid rgba(255, 153, 68, 0.3);
         }
 
         /* === FOOTER === */
         .footer {
-          margin-top: 10px;
-          padding: 8px 4px 0;
+          margin-top: 6px;
+          padding: 4px 4px 0;
           border-top: 1px solid rgba(255,255,255,0.06);
           display: flex;
           justify-content: space-between;
@@ -414,21 +389,21 @@ class GeOvenCard extends HTMLElement {
             </div>
           </div>
 
-          <!-- Oven Window -->
-          <div class="oven-window ${isActive ? 'active' : ''}">
-            <div style="width:100%">
-              <div class="heat-element top"></div>
-              <div class="window-inner">
-                <div class="window-status">${isActive ? opMode : 'OFF'}</div>
-              </div>
-              <div class="heat-element bottom"></div>
-            </div>
-          </div>
-
-          <!-- Handle -->
+          <!-- Handle (above window) -->
           <div class="handle-bar"></div>
 
-          <!-- Attributes Grid -->
+          <!-- Oven Window with mode chips inside -->
+          <div class="oven-window ${isActive ? 'active' : ''}">
+            <div class="heat-element top"></div>
+            <div class="window-modes">
+              ${opList.filter(m => m !== 'Off').map(m =>
+                `<span class="mode-chip ${m === opMode ? 'active' : ''}">${m}</span>`
+              ).join('')}
+            </div>
+            <div class="heat-element bottom"></div>
+          </div>
+
+          <!-- Attributes Grid (compact) -->
           <div class="attr-panel">
             <div class="attr-item">
               <span class="attr-label">Current</span>
@@ -439,32 +414,25 @@ class GeOvenCard extends HTMLElement {
               <span class="attr-value ${isActive ? 'highlight' : ''}">${targetTemp != null ? targetTemp + '°F' : '--'}</span>
             </div>
             <div class="attr-item">
-              <span class="attr-label">Display Temp</span>
+              <span class="attr-label">Display</span>
               <span class="attr-value">${displayTemp != null ? displayTemp + '°F' : '--'}</span>
             </div>
             <div class="attr-item">
-              <span class="attr-label">Raw Temp</span>
+              <span class="attr-label">Raw</span>
               <span class="attr-value">${rawTemp != null ? rawTemp + '°F' : '--'}</span>
             </div>
             <div class="attr-item">
               <span class="attr-label">Range</span>
-              <span class="attr-value">${minTemp}° – ${maxTemp}°</span>
+              <span class="attr-value">${minTemp}°–${maxTemp}°</span>
             </div>
             <div class="attr-item">
               <span class="attr-label">Probe</span>
               <span class="attr-value">
-                <span class="probe-badge ${probePresent ? '' : 'inactive'}">
-                  ${probePresent ? '● Connected' : '○ None'}
+                <span class="probe-badge ${probePresent ? 'active' : 'inactive'}">
+                  ${probePresent ? '● Yes' : '○ No'}
                 </span>
               </span>
             </div>
-          </div>
-
-          <!-- Mode chips -->
-          <div class="modes-row">
-            ${opList.filter(m => m !== 'Off').map(m =>
-              `<span class="mode-chip ${m === opMode ? 'active' : ''}">${m}</span>`
-            ).join('')}
           </div>
 
           <!-- Footer -->
