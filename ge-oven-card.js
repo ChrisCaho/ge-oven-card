@@ -1,4 +1,4 @@
-const GE_OVEN_CARD_VERSION = '1.2.0';
+const GE_OVEN_CARD_VERSION = '1.2.1';
 console.log(`GE Oven Card v${GE_OVEN_CARD_VERSION}: loading...`);
 
 class GeOvenCard extends HTMLElement {
@@ -182,8 +182,8 @@ class GeOvenCard extends HTMLElement {
           letter-spacing: 2px;
         }
         .lcd-temp.off {
-          color: #4488bb;
-          text-shadow: 0 0 6px rgba(68, 136, 187, 0.3);
+          color: #5599cc;
+          text-shadow: 0 0 8px rgba(85, 153, 204, 0.4);
         }
         .lcd-degree {
           font-size: 24px;
@@ -193,8 +193,8 @@ class GeOvenCard extends HTMLElement {
           vertical-align: super;
         }
         .lcd-degree.off {
-          color: #4488bb;
-          text-shadow: 0 0 4px rgba(68, 136, 187, 0.3);
+          color: #5599cc;
+          text-shadow: 0 0 6px rgba(85, 153, 204, 0.4);
         }
         .lcd-target {
           font-family: 'Courier New', 'Consolas', monospace;
@@ -212,8 +212,8 @@ class GeOvenCard extends HTMLElement {
           letter-spacing: 1px;
         }
         .lcd-mode.off {
-          color: #3a6699;
-          text-shadow: 0 0 4px rgba(58, 102, 153, 0.2);
+          color: #6699cc;
+          text-shadow: 0 0 6px rgba(102, 153, 204, 0.4);
         }
         .lcd-status {
           font-family: 'Courier New', 'Consolas', monospace;
