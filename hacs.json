@@ -1,6 +1,5 @@
 {
   "name": "GE Oven Card",
   "render_readme": true,
-  "filename": "ge-oven-card.js",
-  "version": "2.1.0"
+  "filename": "ge-oven-card.js"
 }
