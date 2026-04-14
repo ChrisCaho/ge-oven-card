@@ -1,4 +1,4 @@
-const GE_OVEN_CARD_VERSION = '1.5.0';
+const GE_OVEN_CARD_VERSION = '2.0.0';
 console.log(`GE Oven Card v${GE_OVEN_CARD_VERSION}: loading...`);
 
 class GeOvenCard extends HTMLElement {
@@ -42,6 +42,23 @@ class GeOvenCard extends HTMLElement {
     return { entity: 'water_heater.ge_oven', name: 'GE Oven', size: 'normal' };
   }
 
+  // Derive sensor prefix from water_heater entity ID
+  // water_heater.hasvr1_ge_top_oven -> sensor.hasvr1_ge_top_oven
+  _getSensor(suffix) {
+    if (!this._hass) return null;
+    const sensorId = this._config.entity.replace('water_heater.', 'sensor.') + '_' + suffix;
+    const entity = this._hass.states[sensorId];
+    return entity ? entity.state : null;
+  }
+
+  _formatTime(seconds) {
+    const s = parseFloat(seconds);
+    if (!s || s <= 0) return null;
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  }
+
   _render() {
     if (!this._hass || !this._config) return;
 
@@ -65,12 +82,20 @@ class GeOvenCard extends HTMLElement {
     const currentTemp = attrs.current_temperature;
     const targetTemp = attrs.temperature;
     const displayTemp = attrs.display_temperature;
-    const rawTemp = attrs.raw_temperature;
     const probePresent = attrs.probe_present || false;
     const displayState = attrs.display_state || state;
     const minTemp = attrs.min_temp;
     const maxTemp = attrs.max_temp;
     const friendlyName = this._config.name || attrs.friendly_name || 'GE Oven';
+
+    // Sensor-based values
+    const cookTimeRaw = this._getSensor('cook_time_remaining');
+    const kitchenTimerRaw = this._getSensor('kitchen_timer');
+    const probeTemp = this._getSensor('probe_display_temp');
+
+    const cookTime = this._formatTime(cookTimeRaw);
+    const kitchenTimer = this._formatTime(kitchenTimerRaw);
+    const probeTempVal = probeTemp ? parseFloat(probeTemp) : 0;
 
     // Size configuration — window heights
     const size = this._config.size;
@@ -83,8 +108,35 @@ class GeOvenCard extends HTMLElement {
 
     // Format attribute values — show "--" for 0 or null when off
     const fmtTemp = (v) => (v != null && (isActive || v !== 0)) ? `${v}°F` : '--';
-    const fmtDisplay = displayTemp != null && (isActive || displayTemp !== 0) ? `${displayTemp}°F` : '--';
     const fmtTarget = targetTemp != null ? `${targetTemp}°F` : '--';
+
+    // LCD right-side info: cook timer > kitchen timer > target temp
+    let lcdRight = '';
+    if (cookTime) {
+      lcdRight = `<span class="lcd-target">COOK ${cookTime}</span>`;
+    } else if (kitchenTimer) {
+      lcdRight = `<span class="lcd-target">TIMER ${kitchenTimer}</span>`;
+    } else if (lcdTarget) {
+      lcdRight = `<span class="lcd-target">SET ${lcdTarget}</span>`;
+    }
+
+    // LCD status line right side: probe temp or PROBE label
+    let lcdStatusRight = '';
+    if (probePresent && probeTempVal > 0) {
+      lcdStatusRight = `<span class="lcd-status">PROBE ${probeTempVal}°F</span>`;
+    } else if (probePresent) {
+      lcdStatusRight = '<span class="lcd-status">PROBE</span>';
+    }
+
+    // Probe display in attribute grid
+    let probeDisplay = '';
+    if (probePresent && probeTempVal > 0) {
+      probeDisplay = `<span class="probe-badge active">${probeTempVal}°F</span>`;
+    } else if (probePresent) {
+      probeDisplay = '<span class="probe-badge active">● In</span>';
+    } else {
+      probeDisplay = '<span class="probe-badge inactive">○ No</span>';
+    }
 
     this.shadowRoot.innerHTML = `
       <style>
@@ -332,6 +384,9 @@ class GeOvenCard extends HTMLElement {
         .attr-value.highlight {
           color: #ff9944;
         }
+        .attr-value.timer {
+          color: #66bbff;
+        }
 
         /* === PROBE INDICATOR === */
         .probe-badge {
@@ -379,11 +434,11 @@ class GeOvenCard extends HTMLElement {
                   <span class="lcd-temp ${isActive ? '' : 'off'}">${lcdTemp}</span>
                   <span class="lcd-degree ${isActive ? '' : 'off'}">°F</span>
                 </div>
-                ${lcdTarget ? `<span class="lcd-target">SET ${lcdTarget}</span>` : ''}
+                ${lcdRight}
               </div>
               <div class="lcd-row">
                 <span class="lcd-mode ${isActive ? '' : 'off'}">${isActive ? opMode : displayState}</span>
-                ${probePresent ? '<span class="lcd-status">PROBE</span>' : ''}
+                ${lcdStatusRight}
               </div>
             </div>
           </div>
@@ -411,24 +466,20 @@ class GeOvenCard extends HTMLElement {
                 <span class="attr-value ${isActive ? 'highlight' : ''}">${fmtTarget}</span>
               </div>
               <div class="attr-item">
-                <span class="attr-label">Display</span>
-                <span class="attr-value">${fmtDisplay}</span>
+                <span class="attr-label">Probe</span>
+                <span class="attr-value">${probeDisplay}</span>
               </div>
               <div class="attr-item">
-                <span class="attr-label">Raw</span>
-                <span class="attr-value">${fmtTemp(rawTemp)}</span>
+                <span class="attr-label">Cook Timer</span>
+                <span class="attr-value ${cookTime ? 'timer' : ''}">${cookTime || '--'}</span>
+              </div>
+              <div class="attr-item">
+                <span class="attr-label">Kitchen Timer</span>
+                <span class="attr-value ${kitchenTimer ? 'timer' : ''}">${kitchenTimer || '--'}</span>
               </div>
               <div class="attr-item">
                 <span class="attr-label">Range</span>
                 <span class="attr-value">${minTemp}°–${maxTemp}°</span>
-              </div>
-              <div class="attr-item">
-                <span class="attr-label">Probe</span>
-                <span class="attr-value">
-                  <span class="probe-badge ${probePresent ? 'active' : 'inactive'}">
-                    ${probePresent ? '● Yes' : '○ No'}
-                  </span>
-                </span>
               </div>
             </div>
           </div>
