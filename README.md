@@ -14,12 +14,13 @@ The card renders a stylized GE Profile oven front panel: a blue LCD display with
 ## Features
 
 - Blue LCD display with CRT scanline overlay and large current-temperature readout
-- LCD right side cycles through: active cook timer, kitchen timer, or set-point temperature
+- Delayed start support: LCD shows "DELAY" with countdown timer when a delayed cook is programmed
+- LCD right side cycles through: delay countdown, active cook timer, kitchen timer, or set-point temperature
 - Operation mode label (Bake, Broil, Air Fry, Convection Roast, etc.) on the LCD; falls back to `display_state` when the oven is off
 - Probe status shown on the LCD when a meat probe is detected; shows actual probe temperature once inserted
 - Orange heat glow animation and pulsing heat element bars when the oven is active
 - Dark, unlit window when the oven is off
-- Lightbulb indicator in the top bar derived from the `select.*_light` entity; glows yellow when on
+- Lightbulb indicator inside the LCD display, only visible when the oven light is on (orange-yellow glow)
 - Temperature range (`min_temp` / `max_temp`) displayed in the top bar
 - Attribute grid inside the door frame: Current temp, Target temp, Probe, Cook Timer, Kitchen Timer, Status
 - 100 degrees F treated as a sensor floor value and shown as "--" rather than a false reading
@@ -152,18 +153,29 @@ The card requires one `water_heater` entity. The following attributes are read f
 | `max_temp`            | Shown in top bar temperature range |
 | `friendly_name`       | Used as the card name if `name` is not set in config |
 
-### Auto-Discovered Entities
+### How Entity Discovery Works
 
-The card derives companion entity IDs from the primary entity automatically by replacing the domain prefix and appending a suffix. No configuration is needed. If an entity does not exist the corresponding field shows "--".
+The card only needs one config value — the `water_heater` entity ID. It automatically discovers all other entities by replacing the domain prefix and appending a suffix. **No manual sensor configuration is required.** If a derived entity does not exist, the corresponding field gracefully shows "--" or hides.
 
-Given `water_heater.hasvr1_ge_top_oven`, the card looks for:
+The naming rule is simple: the portion of the entity ID **after the domain prefix** (the "base name") must be identical across all related entities. The card swaps the domain and adds a suffix to find each one.
 
-| Derived Entity ID                                      | Used For |
-|--------------------------------------------------------|----------|
-| `sensor.hasvr1_ge_top_oven_cook_time_remaining`        | Cook timer countdown on LCD and in attribute grid |
-| `sensor.hasvr1_ge_top_oven_kitchen_timer`              | Kitchen timer countdown on LCD and in attribute grid |
-| `sensor.hasvr1_ge_top_oven_probe_display_temp`         | Meat probe temperature in LCD and attribute grid |
-| `select.hasvr1_ge_top_oven_light`                      | Oven light on/off state for the lightbulb indicator |
+**Example:** Given `entity: water_heater.hasvr1_ge_top_oven`, the base name is `hasvr1_ge_top_oven`. The card derives:
+
+| Domain Swap | Suffix Added | Full Entity ID | Used For |
+|-------------|-------------|----------------|----------|
+| `sensor.` | `_cook_time_remaining` | `sensor.hasvr1_ge_top_oven_cook_time_remaining` | Cook timer countdown on LCD and attribute grid |
+| `sensor.` | `_kitchen_timer` | `sensor.hasvr1_ge_top_oven_kitchen_timer` | Kitchen timer on LCD and attribute grid |
+| `sensor.` | `_probe_display_temp` | `sensor.hasvr1_ge_top_oven_probe_display_temp` | Meat probe temperature on LCD and attribute grid |
+| `sensor.` | `_cook_mode` | `sensor.hasvr1_ge_top_oven_cook_mode` | Full cook mode description (e.g. "Bake (350°F) (Delayed Start)") |
+| `select.` | `_light` | `select.hasvr1_ge_top_oven_light` | Oven light indicator inside the LCD display |
+
+The card also reads the `delay_time_remaining` attribute from the `water_heater` entity to detect and display delayed start countdowns.
+
+In summary, the card reads from three HA entity domains using one config value:
+
+- **`water_heater.*`** — primary entity (attributes: state, temperatures, probe, operation mode, delay time)
+- **`sensor.*`** — timer, probe, and cook mode sensors (derived by replacing `water_heater.` with `sensor.` + suffix)
+- **`select.*`** — oven light control (derived by replacing `water_heater.` with `select.` + suffix)
 
 ---
 

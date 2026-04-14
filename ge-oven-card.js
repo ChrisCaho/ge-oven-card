@@ -1,4 +1,4 @@
-const GE_OVEN_CARD_VERSION = '2.2.0';
+const GE_OVEN_CARD_VERSION = '2.3.0';
 console.log(`GE Oven Card v${GE_OVEN_CARD_VERSION}: loading...`);
 
 class GeOvenCard extends HTMLElement {
@@ -59,6 +59,19 @@ class GeOvenCard extends HTMLElement {
     return h > 0 ? `${h}h ${m}m` : `${m}m`;
   }
 
+  // Format H:MM or M:SS attribute string (used by delay_time_remaining)
+  _formatTimeHM(val) {
+    if (!val || val === '0:00') return null;
+    const parts = String(val).split(':');
+    if (parts.length !== 2) return val;
+    const a = parseInt(parts[0], 10);
+    const b = parseInt(parts[1], 10);
+    if (isNaN(a) || isNaN(b)) return val;
+    // H:MM format — show as "Xh Ym"
+    if (a > 0) return `${a}h ${b}m`;
+    return `${b}m`;
+  }
+
   _render() {
     if (!this._hass || !this._config) return;
 
@@ -77,7 +90,7 @@ class GeOvenCard extends HTMLElement {
 
     const attrs = stateObj.attributes;
     const state = stateObj.state;
-    const isActive = state.toLowerCase() !== 'off' && state.toLowerCase() !== 'unavailable';
+    const isOff = state.toLowerCase() === 'off' || state.toLowerCase() === 'unavailable';
     const opMode = attrs.operation_mode || 'Off';
     const currentTemp = attrs.current_temperature;
     const targetTemp = attrs.temperature;
@@ -87,6 +100,18 @@ class GeOvenCard extends HTMLElement {
     const minTemp = attrs.min_temp;
     const maxTemp = attrs.max_temp;
     const friendlyName = this._config.name || attrs.friendly_name || 'GE Oven';
+
+    // Delayed start detection
+    const delayTimeAttr = attrs.delay_time_remaining;
+    const isDelay = displayState.toLowerCase().includes('delay');
+    const delayTime = this._formatTimeHM(delayTimeAttr);
+
+    // Cook mode sensor (has full description like "Bake (350°F) (Delayed Start)")
+    const cookMode = this._getSensor('cook_mode');
+
+    // Active = not off AND not just sitting in delay with unknown state
+    const isActive = !isOff && !isDelay;
+    const isEngaged = !isOff; // either active or delayed — something is happening
 
     // Oven light (select entity)
     const lightEntityId = this._config.entity.replace('water_heater.', 'select.') + '_light';
@@ -121,9 +146,11 @@ class GeOvenCard extends HTMLElement {
     const fmtTemp = (v) => (v != null && !isBogus(v)) ? `${v}°F` : '--';
     const fmtTarget = targetTemp != null ? `${targetTemp}°F` : '--';
 
-    // LCD right-side info: cook timer > kitchen timer > target temp
+    // LCD right-side info: delay countdown > cook timer > kitchen timer > target temp
     let lcdRight = '';
-    if (cookTime) {
+    if (isDelay && delayTime) {
+      lcdRight = `<span class="lcd-target">${delayTime}</span>`;
+    } else if (cookTime) {
       lcdRight = `<span class="lcd-target">COOK ${cookTime}</span>`;
     } else if (kitchenTimer) {
       lcdRight = `<span class="lcd-target">TIMER ${kitchenTimer}</span>`;
@@ -454,17 +481,17 @@ class GeOvenCard extends HTMLElement {
 
           <!-- LCD Display -->
           <div class="lcd-bezel">
-            <div class="lcd-screen ${isActive ? 'active' : ''}">
+            <div class="lcd-screen ${isEngaged ? 'active' : ''}">
               ${lightOn ? '<span class="oven-light">💡</span>' : ''}
               <div class="lcd-row main">
                 <div>
-                  <span class="lcd-temp ${isActive ? '' : 'off'}">${lcdTemp}</span>
-                  <span class="lcd-degree ${isActive ? '' : 'off'}">°F</span>
+                  <span class="lcd-temp ${isEngaged ? '' : 'off'}">${isDelay ? 'DELAY' : lcdTemp}</span>
+                  ${isDelay ? '' : `<span class="lcd-degree ${isEngaged ? '' : 'off'}">°F</span>`}
                 </div>
                 ${lcdRight}
               </div>
               <div class="lcd-row">
-                <span class="lcd-mode ${isActive ? '' : 'off'}">${isActive ? opMode : displayState}</span>
+                <span class="lcd-mode ${isEngaged ? '' : 'off'}">${isDelay ? displayState : (isActive ? opMode : displayState)}</span>
                 ${lcdStatusRight}
               </div>
             </div>
@@ -486,11 +513,11 @@ class GeOvenCard extends HTMLElement {
             <div class="attr-panel">
               <div class="attr-item">
                 <span class="attr-label">Current</span>
-                <span class="attr-value ${isActive ? 'highlight' : ''}">${fmtTemp(currentTemp)}</span>
+                <span class="attr-value ${isEngaged ? 'highlight' : ''}">${fmtTemp(currentTemp)}</span>
               </div>
               <div class="attr-item">
                 <span class="attr-label">Target</span>
-                <span class="attr-value ${isActive ? 'highlight' : ''}">${fmtTarget}</span>
+                <span class="attr-value ${isEngaged ? 'highlight' : ''}">${fmtTarget}</span>
               </div>
               <div class="attr-item">
                 <span class="attr-label">Probe</span>
@@ -506,7 +533,7 @@ class GeOvenCard extends HTMLElement {
               </div>
               <div class="attr-item">
                 <span class="attr-label">Status</span>
-                <span class="attr-value ${isActive ? 'highlight' : ''}">${displayState}</span>
+                <span class="attr-value ${isEngaged ? 'highlight' : ''}">${displayState}</span>
               </div>
             </div>
           </div>
