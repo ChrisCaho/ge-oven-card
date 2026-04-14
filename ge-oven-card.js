@@ -1,4 +1,4 @@
-const GE_OVEN_CARD_VERSION = '2.1.0';
+const GE_OVEN_CARD_VERSION = '2.2.0';
 console.log(`GE Oven Card v${GE_OVEN_CARD_VERSION}: loading...`);
 
 class GeOvenCard extends HTMLElement {
@@ -190,23 +190,17 @@ class GeOvenCard extends HTMLElement {
         }
         .temp-range {
           font-size: 10px;
-          color: #666;
+          color: #888;
           letter-spacing: 0.5px;
         }
-        .top-right {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
         .oven-light {
-          font-size: 16px;
-          opacity: 0.3;
-          transition: all 0.3s ease;
-        }
-        .oven-light.on {
-          opacity: 1;
-          color: #ffdd44;
-          text-shadow: 0 0 8px rgba(255, 221, 68, 0.6);
+          position: absolute;
+          top: 8px;
+          right: 12px;
+          font-size: 18px;
+          color: #ffcc33;
+          text-shadow: 0 0 10px rgba(255, 200, 50, 0.7), 0 0 20px rgba(255, 180, 30, 0.4);
+          z-index: 2;
         }
 
         /* === LCD DISPLAY === */
@@ -455,15 +449,13 @@ class GeOvenCard extends HTMLElement {
           <div class="top-bar">
             <span class="brand">GE Profile</span>
             <span class="temp-range">${minTemp}°–${maxTemp}°</span>
-            <div class="top-right">
-              <span class="oven-light ${lightOn ? 'on' : ''}" title="Oven Light${lightOn ? ': On' : ''}">💡</span>
-              <span class="oven-name">${friendlyName}</span>
-            </div>
+            <span class="oven-name">${friendlyName}</span>
           </div>
 
           <!-- LCD Display -->
           <div class="lcd-bezel">
             <div class="lcd-screen ${isActive ? 'active' : ''}">
+              ${lightOn ? '<span class="oven-light">💡</span>' : ''}
               <div class="lcd-row main">
                 <div>
                   <span class="lcd-temp ${isActive ? '' : 'off'}">${lcdTemp}</span>
