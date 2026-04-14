@@ -107,12 +107,18 @@ class GeOvenCard extends HTMLElement {
     const windowHeight = { normal: 180, medium: 120, small: 60 }[size];
     const windowPadding = { normal: 16, medium: 10, small: 6 }[size];
 
+    // Treat 100°F as sensor floor (not a real reading)
+    const isBogus = (v) => v == null || v === 0 || v === 100 || v === '100';
+    const realCurrentTemp = isBogus(currentTemp) ? null : currentTemp;
+    const realDisplayTemp = isBogus(displayTemp) ? null : displayTemp;
+    const realRawTemp = isBogus(attrs.raw_temperature) ? null : attrs.raw_temperature;
+
     // Format display temperature for the LCD
-    const lcdTemp = isActive && displayTemp ? `${displayTemp}` : (currentTemp != null ? `${currentTemp}` : '--');
+    const lcdTemp = isActive && realDisplayTemp ? `${realDisplayTemp}` : (realCurrentTemp != null ? `${realCurrentTemp}` : '--');
     const lcdTarget = isActive && targetTemp ? `${targetTemp}°` : '';
 
-    // Format attribute values — show "--" for 0 or null when off
-    const fmtTemp = (v) => (v != null && (isActive || v !== 0)) ? `${v}°F` : '--';
+    // Format attribute values — show "--" for 0, null, or 100 (sensor floor)
+    const fmtTemp = (v) => (v != null && !isBogus(v)) ? `${v}°F` : '--';
     const fmtTarget = targetTemp != null ? `${targetTemp}°F` : '--';
 
     // LCD right-side info: cook timer > kitchen timer > target temp
@@ -181,6 +187,11 @@ class GeOvenCard extends HTMLElement {
           font-size: 13px;
           font-weight: 500;
           color: #aaa;
+        }
+        .temp-range {
+          font-size: 10px;
+          color: #666;
+          letter-spacing: 0.5px;
         }
         .top-right {
           display: flex;
@@ -443,6 +454,7 @@ class GeOvenCard extends HTMLElement {
           <!-- Top bar -->
           <div class="top-bar">
             <span class="brand">GE Profile</span>
+            <span class="temp-range">${minTemp}°–${maxTemp}°</span>
             <div class="top-right">
               <span class="oven-light ${lightOn ? 'on' : ''}" title="Oven Light${lightOn ? ': On' : ''}">💡</span>
               <span class="oven-name">${friendlyName}</span>
@@ -501,8 +513,8 @@ class GeOvenCard extends HTMLElement {
                 <span class="attr-value ${kitchenTimer ? 'timer' : ''}">${kitchenTimer || '--'}</span>
               </div>
               <div class="attr-item">
-                <span class="attr-label">Range</span>
-                <span class="attr-value">${minTemp}°–${maxTemp}°</span>
+                <span class="attr-label">Status</span>
+                <span class="attr-value ${isActive ? 'highlight' : ''}">${displayState}</span>
               </div>
             </div>
           </div>
