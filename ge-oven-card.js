@@ -1,4 +1,4 @@
-const GE_OVEN_CARD_VERSION = '2.3.0';
+const GE_OVEN_CARD_VERSION = '2.4.0';
 console.log(`GE Oven Card v${GE_OVEN_CARD_VERSION}: loading...`);
 
 class GeOvenCard extends HTMLElement {
@@ -59,17 +59,21 @@ class GeOvenCard extends HTMLElement {
     return h > 0 ? `${h}h ${m}m` : `${m}m`;
   }
 
-  // Format H:MM or M:SS attribute string (used by delay_time_remaining)
-  _formatTimeHM(val) {
+  // Calculate wall clock start time from H:MM delay remaining
+  _delayStartTime(val) {
     if (!val || val === '0:00') return null;
     const parts = String(val).split(':');
-    if (parts.length !== 2) return val;
-    const a = parseInt(parts[0], 10);
-    const b = parseInt(parts[1], 10);
-    if (isNaN(a) || isNaN(b)) return val;
-    // H:MM format — show as "Xh Ym"
-    if (a > 0) return `${a}h ${b}m`;
-    return `${b}m`;
+    if (parts.length !== 2) return null;
+    const h = parseInt(parts[0], 10);
+    const m = parseInt(parts[1], 10);
+    if (isNaN(h) || isNaN(m)) return null;
+    const now = new Date();
+    now.setMinutes(now.getMinutes() + h * 60 + m);
+    let hours = now.getHours();
+    const mins = now.getMinutes();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12 || 12;
+    return `${hours}:${String(mins).padStart(2, '0')} ${ampm}`;
   }
 
   _render() {
@@ -104,7 +108,7 @@ class GeOvenCard extends HTMLElement {
     // Delayed start detection
     const delayTimeAttr = attrs.delay_time_remaining;
     const isDelay = displayState.toLowerCase().includes('delay');
-    const delayTime = this._formatTimeHM(delayTimeAttr);
+    const delayStartTime = this._delayStartTime(delayTimeAttr);
 
     // Cook mode sensor (has full description like "Bake (350°F) (Delayed Start)")
     const cookMode = this._getSensor('cook_mode');
@@ -146,10 +150,10 @@ class GeOvenCard extends HTMLElement {
     const fmtTemp = (v) => (v != null && !isBogus(v)) ? `${v}°F` : '--';
     const fmtTarget = targetTemp != null ? `${targetTemp}°F` : '--';
 
-    // LCD right-side info: delay countdown > cook timer > kitchen timer > target temp
+    // LCD right-side info: cook timer > kitchen timer > target temp
     let lcdRight = '';
-    if (isDelay && delayTime) {
-      lcdRight = `<span class="lcd-target">${delayTime}</span>`;
+    if (isDelay && targetTemp) {
+      lcdRight = `<span class="lcd-target">SET ${targetTemp}°</span>`;
     } else if (cookTime) {
       lcdRight = `<span class="lcd-target">COOK ${cookTime}</span>`;
     } else if (kitchenTimer) {
@@ -491,7 +495,7 @@ class GeOvenCard extends HTMLElement {
                 ${lcdRight}
               </div>
               <div class="lcd-row">
-                <span class="lcd-mode ${isEngaged ? '' : 'off'}">${isDelay ? displayState : (isActive ? opMode : displayState)}</span>
+                <span class="lcd-mode ${isEngaged ? '' : 'off'}">${isDelay ? (delayStartTime ? `Start At ${delayStartTime}` : displayState) : (isActive ? opMode : displayState)}</span>
                 ${lcdStatusRight}
               </div>
             </div>
