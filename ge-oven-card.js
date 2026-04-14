@@ -1,4 +1,4 @@
-const GE_OVEN_CARD_VERSION = '2.0.0';
+const GE_OVEN_CARD_VERSION = '2.1.0';
 console.log(`GE Oven Card v${GE_OVEN_CARD_VERSION}: loading...`);
 
 class GeOvenCard extends HTMLElement {
@@ -88,6 +88,11 @@ class GeOvenCard extends HTMLElement {
     const maxTemp = attrs.max_temp;
     const friendlyName = this._config.name || attrs.friendly_name || 'GE Oven';
 
+    // Oven light (select entity)
+    const lightEntityId = this._config.entity.replace('water_heater.', 'select.') + '_light';
+    const lightObj = this._hass.states[lightEntityId];
+    const lightOn = lightObj && lightObj.state.toLowerCase() !== 'off';
+
     // Sensor-based values
     const cookTimeRaw = this._getSensor('cook_time_remaining');
     const kitchenTimerRaw = this._getSensor('kitchen_timer');
@@ -176,6 +181,21 @@ class GeOvenCard extends HTMLElement {
           font-size: 13px;
           font-weight: 500;
           color: #aaa;
+        }
+        .top-right {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .oven-light {
+          font-size: 16px;
+          opacity: 0.3;
+          transition: all 0.3s ease;
+        }
+        .oven-light.on {
+          opacity: 1;
+          color: #ffdd44;
+          text-shadow: 0 0 8px rgba(255, 221, 68, 0.6);
         }
 
         /* === LCD DISPLAY === */
@@ -423,7 +443,10 @@ class GeOvenCard extends HTMLElement {
           <!-- Top bar -->
           <div class="top-bar">
             <span class="brand">GE Profile</span>
-            <span class="oven-name">${friendlyName}</span>
+            <div class="top-right">
+              <span class="oven-light ${lightOn ? 'on' : ''}" title="Oven Light${lightOn ? ': On' : ''}">💡</span>
+              <span class="oven-name">${friendlyName}</span>
+            </div>
           </div>
 
           <!-- LCD Display -->
