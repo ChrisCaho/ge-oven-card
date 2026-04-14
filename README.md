@@ -7,7 +7,13 @@ A custom Lovelace card for Home Assistant that displays a visual status panel fo
 
 The card renders a stylized GE Profile oven front panel: a blue LCD display with a CRT scanline effect, an oven door frame with handle and window, animated heat element bars and orange glow when active, a lightbulb indicator, and a compact attribute grid. It supports single ovens, double ovens, and GE TwinFlex triple-cavity configurations.
 
-![GE Oven Card](screenshot.jpg)
+![GE Oven Card — Bake Mode](ge-oven-card-bake.jpg)
+
+![GE Oven Card — Off](ge-oven-card-off.jpg)
+
+![GE Oven Card — Delayed Start](ge-oven-card-delay.jpg)
+
+![GE Oven Card — Three Sizes](ge-oven-card-three-sizes.jpg)
 
 ---
 
