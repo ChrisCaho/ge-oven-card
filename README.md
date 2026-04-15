@@ -9,6 +9,8 @@ The card renders a stylized GE Profile oven front panel: a blue LCD display with
 
 ![GE Oven Card — Bake Mode](ge-oven-card-bake.jpg)
 
+> **Looking for all GE appliance cards in one package?** Check out [GE Appliances Card](https://github.com/ChrisCaho/ge-appliances-card) — a bundle containing oven, washer, and dryer cards.
+
 ![GE Oven Card — Off](ge-oven-card-off.jpg)
 
 ![GE Oven Card — Delayed Start](ge-oven-card-delay.jpg)
