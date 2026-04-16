@@ -1,4 +1,4 @@
-const GE_OVEN_CARD_VERSION = '2.6.0';
+const GE_OVEN_CARD_VERSION = '2.7.0';
 console.log(`GE Oven Card v${GE_OVEN_CARD_VERSION}: loading...`);
 
 class GeOvenCard extends HTMLElement {
@@ -177,7 +177,7 @@ class GeOvenCard extends HTMLElement {
     const cookTimeRaw = this._getSensor('cook_time_remaining');
     const kitchenTimerRaw = this._getSensor('kitchen_timer');
     const probeTemp = this._getSensor('probe_display_temp');
-    const cookTimeElapsedRaw = this._getSensor('cook_time_elapsed');
+    const cookTimeElapsedRaw = this._getSensor('cooking_elapsed');
 
     const cookTime = this._formatTime(cookTimeRaw);
     const kitchenTimer = this._formatTime(kitchenTimerRaw);

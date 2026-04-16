@@ -30,7 +30,11 @@ The card renders a stylized GE Profile oven front panel: a blue LCD display with
 - Dark, unlit window when the oven is off
 - Lightbulb indicator inside the LCD display, only visible when the oven light is on (orange-yellow glow)
 - Temperature range (`min_temp` / `max_temp`) displayed in the top bar
-- Attribute grid inside the door frame: Current temp, Target temp, Probe, Cook Timer, Kitchen Timer, Status
+- Attribute grid inside the door frame: Current temp, Target temp, Probe, Cook Timer, Kitchen Timer, Elapsed
+- Cooking elapsed timer shows time since preheat completed (requires optional helper setup — see [Elapsed Timer Setup](#elapsed-timer-setup-optional))
+- Mode-specific heating elements: Bake (bottom only), Broil (top only), Roast (both), Convection modes (with spinning fan)
+- Heat wave animations: rising from bottom element, falling from top element, or circulating ovals in convection mode
+- LCD mode line shows "MODE - PHASE" during preheat (e.g. "BAKE - PREHEAT"), just the mode name once cooking
 - 100 degrees F treated as a sensor floor value and shown as "--" rather than a false reading
 - Three size modes: `normal`, `medium`, `small` for multi-cavity oven dashboards
 - All sensor entity IDs are auto-derived from the primary `water_heater` entity ID; no manual sensor configuration required
@@ -196,6 +200,122 @@ The right-side field of the LCD follows this priority order:
 3. Otherwise, if a target temperature is set, it shows `SET XXX°`
 
 The probe line on the lower LCD appears when `probe_present` is `true`. If probe temperature is available it shows `PROBE XXX°F`; otherwise it shows `PROBE`.
+
+---
+
+## Elapsed Timer Setup (Optional)
+
+The "Elapsed" field in the attribute grid shows how long the oven has been cooking since preheat completed. This feature requires three pieces of HA configuration: an `input_datetime` helper, a template sensor, and two automations per oven cavity.
+
+If not configured, the Elapsed field simply shows "--".
+
+### Step 1: Input Datetime Helpers
+
+Add to your `input_datetime.yaml` (or create the helpers via **Settings > Devices & Services > Helpers > Add > Date and/or time**):
+
+```yaml
+# One per oven cavity
+ge_top_oven_preheat_done:
+  name: "GE Top Oven Preheat Done"
+  has_date: true
+  has_time: true
+
+ge_middle_oven_preheat_done:
+  name: "GE Middle Oven Preheat Done"
+  has_date: true
+  has_time: true
+
+ge_bottom_oven_preheat_done:
+  name: "GE Bottom Oven Preheat Done"
+  has_date: true
+  has_time: true
+```
+
+### Step 2: Template Sensors
+
+Create a template sensor file (e.g. `templates/ge_oven_elapsed.yaml`) or add to your existing template configuration. The sensor entity ID must follow the pattern `sensor.<base_name>_cooking_elapsed` where `<base_name>` matches your `water_heater` entity (e.g. `water_heater.hasvr1_ge_top_oven` → `sensor.hasvr1_ge_top_oven_cooking_elapsed`).
+
+```yaml
+- sensor:
+    - name: "HASVR1-GE Top Oven Cooking Elapsed"
+      unique_id: hasvr1_ge_top_oven_cooking_elapsed
+      unit_of_measurement: "s"
+      icon: mdi:timer-outline
+      state: >
+        {% set ts = states('input_datetime.ge_top_oven_preheat_done') %}
+        {% if ts in [None, 'unknown', 'unavailable', '']
+           or states('water_heater.hasvr1_ge_top_oven') in ['Off', 'off', 'unavailable'] %}
+          0
+        {% else %}
+          {% set done = as_timestamp(ts, 0) %}
+          {{ ((as_timestamp(now()) - done) | int) if done > 0 else 0 }}
+        {% endif %}
+      availability: >
+        {{ states('water_heater.hasvr1_ge_top_oven') not in ['unavailable'] }}
+```
+
+Repeat for each cavity, changing entity references to match (`middle_oven`, `bottom_oven`).
+
+### Step 3: Automations
+
+Two automations per cavity — one sets the timestamp when preheat ends, the other clears it when the oven turns off.
+
+**Preheat Complete** — add an `input_datetime.set_datetime` action to your existing preheat notification automation (or create one):
+
+```yaml
+- id: 'appliances.0320'
+  alias: "GE Top Oven Preheat Complete"
+  mode: single
+  triggers:
+    - platform: template
+      value_template: "{{ state_attr('water_heater.hasvr1_ge_top_oven', 'display_state') }}"
+  conditions:
+    - condition: template
+      value_template: >
+        {{ trigger.from_state and
+           trigger.from_state.attributes.get('display_state', '') | lower == 'preheat' and
+           state_attr('water_heater.hasvr1_ge_top_oven', 'display_state') | lower != 'preheat' and
+           states('water_heater.hasvr1_ge_top_oven') not in ['Off', 'off', 'unknown', 'unavailable'] }}
+  actions:
+    - action: input_datetime.set_datetime
+      target:
+        entity_id: input_datetime.ge_top_oven_preheat_done
+      data:
+        datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
+```
+
+**Oven Turned Off** — add a clear action to your existing oven-off automation:
+
+```yaml
+- id: 'appliances.0310'
+  alias: "GE Top Oven Finished"
+  mode: single
+  triggers:
+    - platform: state
+      entity_id: water_heater.hasvr1_ge_top_oven
+      to: "Off"
+      not_from:
+        - unknown
+        - unavailable
+  conditions:
+    - condition: template
+      value_template: >
+        {{ trigger.from_state.state not in ['Off', 'unknown', 'unavailable', ''] }}
+  actions:
+    - action: input_datetime.set_datetime
+      target:
+        entity_id: input_datetime.ge_top_oven_preheat_done
+      data:
+        datetime: "1970-01-01 00:00:00"
+```
+
+### How It Works
+
+1. When the oven starts, `display_state` shows "Preheat"
+2. When preheat finishes, the automation records `now()` into the `input_datetime` helper
+3. The template sensor calculates `now() - stored_timestamp` in seconds
+4. The card reads the sensor via its standard entity discovery (`_cooking_elapsed` suffix) and formats it as `Xh Ym`
+5. When the oven turns off, the automation resets the timestamp, and the sensor returns 0
 
 ---
 
