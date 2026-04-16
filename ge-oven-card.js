@@ -1,4 +1,4 @@
-const GE_OVEN_CARD_VERSION = '2.5.1';
+const GE_OVEN_CARD_VERSION = '2.5.2';
 console.log(`GE Oven Card v${GE_OVEN_CARD_VERSION}: loading...`);
 
 class GeOvenCard extends HTMLElement {
@@ -291,13 +291,16 @@ class GeOvenCard extends HTMLElement {
       }
     }
 
-    // Convection fan HTML
+    // Convection fan HTML — 6 blades with outer ring
     const convFanHtml = showConvFan ? `
       <div class="conv-fan">
+        <div class="fan-ring"></div>
         <div class="fan-blade b1"></div>
         <div class="fan-blade b2"></div>
         <div class="fan-blade b3"></div>
         <div class="fan-blade b4"></div>
+        <div class="fan-blade b5"></div>
+        <div class="fan-blade b6"></div>
         <div class="fan-hub"></div>
       </div>` : '';
 
@@ -538,41 +541,48 @@ class GeOvenCard extends HTMLElement {
           top: 50%;
           left: 50%;
           transform: translate(-50%, -50%);
-          width: 50px;
-          height: 50px;
+          width: 60px;
+          height: 60px;
           z-index: 3;
-          animation: fanSpin 2s linear infinite;
+          animation: fanSpin 1.8s linear infinite;
         }
         @keyframes fanSpin {
           from { transform: translate(-50%, -50%) rotate(0deg); }
           to { transform: translate(-50%, -50%) rotate(360deg); }
         }
-        .fan-blade {
+        .fan-ring {
           position: absolute;
-          width: 20px;
-          height: 6px;
-          background: rgba(200, 160, 120, 0.35);
-          border-radius: 3px;
+          width: 56px;
+          height: 56px;
+          border: 2px solid rgba(200, 160, 120, 0.3);
+          border-radius: 50%;
           top: 50%;
           left: 50%;
+          transform: translate(-50%, -50%);
         }
-        .fan-blade.b1 {
-          transform: translate(-100%, -50%);
+        .fan-blade {
+          position: absolute;
+          width: 22px;
+          height: 8px;
+          background: rgba(220, 170, 120, 0.45);
+          border-radius: 2px 4px 4px 2px;
+          top: 50%;
+          left: 50%;
+          transform-origin: 0% 50%;
         }
-        .fan-blade.b2 {
-          transform: translate(0%, -50%);
-        }
-        .fan-blade.b3 {
-          transform: translate(-50%, -100%) rotate(90deg);
-        }
-        .fan-blade.b4 {
-          transform: translate(-50%, 0%) rotate(90deg);
-        }
+        /* 6 blades at 60° intervals */
+        .fan-blade.b1 { transform: translate(0%, -50%) rotate(0deg); }
+        .fan-blade.b2 { transform: translate(0%, -50%) rotate(60deg); }
+        .fan-blade.b3 { transform: translate(0%, -50%) rotate(120deg); }
+        .fan-blade.b4 { transform: translate(0%, -50%) rotate(180deg); }
+        .fan-blade.b5 { transform: translate(0%, -50%) rotate(240deg); }
+        .fan-blade.b6 { transform: translate(0%, -50%) rotate(300deg); }
         .fan-hub {
           position: absolute;
-          width: 8px;
-          height: 8px;
-          background: rgba(180, 140, 100, 0.5);
+          width: 10px;
+          height: 10px;
+          background: rgba(200, 160, 120, 0.6);
+          border: 1px solid rgba(220, 180, 140, 0.4);
           border-radius: 50%;
           top: 50%;
           left: 50%;
@@ -591,16 +601,16 @@ class GeOvenCard extends HTMLElement {
         }
         .wave-rise {
           position: absolute;
-          font-size: 16px;
-          color: rgba(255, 120, 40, 0.4);
-          text-shadow: 0 0 6px rgba(255, 100, 20, 0.3);
+          font-size: 18px;
+          color: rgba(255, 140, 50, 0.8);
+          text-shadow: 0 0 8px rgba(255, 100, 20, 0.6);
           animation: riseWave 3s ease-out infinite;
           opacity: 0;
         }
         @keyframes riseWave {
           0% { transform: translateY(0) scaleX(1); opacity: 0; }
-          10% { opacity: 0.6; }
-          80% { opacity: 0.15; }
+          10% { opacity: 0.9; }
+          60% { opacity: 0.5; }
           100% { transform: translateY(-100px) scaleX(1.3); opacity: 0; }
         }
         .wave-rise.r1 { left: 15%; animation-delay: 0s; }
@@ -621,16 +631,16 @@ class GeOvenCard extends HTMLElement {
         }
         .wave-fall {
           position: absolute;
-          font-size: 16px;
-          color: rgba(255, 120, 40, 0.4);
-          text-shadow: 0 0 6px rgba(255, 100, 20, 0.3);
+          font-size: 18px;
+          color: rgba(255, 140, 50, 0.8);
+          text-shadow: 0 0 8px rgba(255, 100, 20, 0.6);
           animation: fallWave 3s ease-out infinite;
           opacity: 0;
         }
         @keyframes fallWave {
           0% { transform: translateY(0) scaleX(1); opacity: 0; }
-          10% { opacity: 0.6; }
-          80% { opacity: 0.15; }
+          10% { opacity: 0.9; }
+          60% { opacity: 0.5; }
           100% { transform: translateY(100px) scaleX(1.3); opacity: 0; }
         }
         .wave-fall.f1 { left: 20%; animation-delay: 0.2s; }
@@ -651,9 +661,9 @@ class GeOvenCard extends HTMLElement {
         }
         .conv-wave {
           position: absolute;
-          font-size: 14px;
-          color: rgba(255, 120, 40, 0.35);
-          text-shadow: 0 0 6px rgba(255, 100, 20, 0.3);
+          font-size: 16px;
+          color: rgba(255, 140, 50, 0.7);
+          text-shadow: 0 0 8px rgba(255, 100, 20, 0.5);
           opacity: 0;
         }
         /* Each wave orbits around the center on its own elliptical path */
@@ -666,44 +676,44 @@ class GeOvenCard extends HTMLElement {
 
         @keyframes orbitWave1 {
           0%   { top: 75%; left: 20%; opacity: 0; transform: rotate(0deg); }
-          15%  { opacity: 0.5; }
-          50%  { top: 20%; left: 70%; opacity: 0.4; transform: rotate(180deg); }
-          85%  { opacity: 0.2; }
+          15%  { opacity: 0.8; }
+          50%  { top: 20%; left: 70%; opacity: 0.6; transform: rotate(180deg); }
+          85%  { opacity: 0.3; }
           100% { top: 75%; left: 20%; opacity: 0; transform: rotate(360deg); }
         }
         @keyframes orbitWave2 {
           0%   { top: 25%; left: 75%; opacity: 0; transform: rotate(0deg); }
-          15%  { opacity: 0.5; }
-          50%  { top: 70%; left: 25%; opacity: 0.4; transform: rotate(180deg); }
-          85%  { opacity: 0.2; }
+          15%  { opacity: 0.8; }
+          50%  { top: 70%; left: 25%; opacity: 0.6; transform: rotate(180deg); }
+          85%  { opacity: 0.3; }
           100% { top: 25%; left: 75%; opacity: 0; transform: rotate(360deg); }
         }
         @keyframes orbitWave3 {
           0%   { top: 50%; left: 15%; opacity: 0; transform: rotate(90deg); }
-          15%  { opacity: 0.5; }
-          50%  { top: 30%; left: 80%; opacity: 0.4; transform: rotate(270deg); }
-          85%  { opacity: 0.2; }
+          15%  { opacity: 0.8; }
+          50%  { top: 30%; left: 80%; opacity: 0.6; transform: rotate(270deg); }
+          85%  { opacity: 0.3; }
           100% { top: 50%; left: 15%; opacity: 0; transform: rotate(450deg); }
         }
         @keyframes orbitWave4 {
           0%   { top: 30%; left: 85%; opacity: 0; transform: rotate(270deg); }
-          15%  { opacity: 0.5; }
-          50%  { top: 65%; left: 15%; opacity: 0.4; transform: rotate(90deg); }
-          85%  { opacity: 0.2; }
+          15%  { opacity: 0.8; }
+          50%  { top: 65%; left: 15%; opacity: 0.6; transform: rotate(90deg); }
+          85%  { opacity: 0.3; }
           100% { top: 30%; left: 85%; opacity: 0; transform: rotate(-90deg); }
         }
         @keyframes orbitWave5 {
           0%   { top: 80%; left: 50%; opacity: 0; transform: rotate(45deg); }
-          15%  { opacity: 0.45; }
-          50%  { top: 15%; left: 40%; opacity: 0.35; transform: rotate(225deg); }
-          85%  { opacity: 0.15; }
+          15%  { opacity: 0.75; }
+          50%  { top: 15%; left: 40%; opacity: 0.55; transform: rotate(225deg); }
+          85%  { opacity: 0.25; }
           100% { top: 80%; left: 50%; opacity: 0; transform: rotate(405deg); }
         }
         @keyframes orbitWave6 {
           0%   { top: 15%; left: 45%; opacity: 0; transform: rotate(135deg); }
-          15%  { opacity: 0.45; }
-          50%  { top: 80%; left: 55%; opacity: 0.35; transform: rotate(315deg); }
-          85%  { opacity: 0.15; }
+          15%  { opacity: 0.75; }
+          50%  { top: 80%; left: 55%; opacity: 0.55; transform: rotate(315deg); }
+          85%  { opacity: 0.25; }
           100% { top: 15%; left: 45%; opacity: 0; transform: rotate(495deg); }
         }
 
