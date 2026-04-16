@@ -1,4 +1,4 @@
-const GE_OVEN_CARD_VERSION = '2.9.0';
+const GE_OVEN_CARD_VERSION = '2.9.1';
 console.log(`GE Oven Card v${GE_OVEN_CARD_VERSION}: loading...`);
 
 class GeOvenCard extends HTMLElement {
@@ -376,6 +376,13 @@ class GeOvenCard extends HTMLElement {
           position: absolute; width: 56px; height: 56px;
           border: 2px solid rgba(200,160,120,0.3); border-radius: 50%;
           top: 2px; left: 2px;
+          transition: border-width 0.3s, border-color 0.3s;
+        }
+        .fan-ring.element-on {
+          border-width: 3px;
+          border-color: #ff4400;
+          animation: elementPulse 8s ease-in-out infinite;
+          box-shadow: 0 0 8px rgba(255, 80, 0, 0.3);
         }
         .fan-blades {
           position: absolute; width: 60px; height: 60px; top: 0; left: 0;
@@ -554,7 +561,7 @@ class GeOvenCard extends HTMLElement {
               <div class="heat-element top" data-field="elementTop"></div>
               <div class="window-spacer">
                 <div class="conv-fan" data-field="convFan">
-                  <div class="fan-ring"></div>
+                  <div class="fan-ring" data-field="fanRing"></div>
                   <div class="fan-blades">
                     <div class="fan-blade b1"></div>
                     <div class="fan-blade b2"></div>
@@ -684,8 +691,9 @@ class GeOvenCard extends HTMLElement {
     this._el('elementTop').className = `heat-element top ${data.showTopElement ? 'on' : 'off'}`;
     this._el('elementBottom').className = `heat-element bottom ${data.showBottomElement ? 'on' : 'off'}`;
 
-    // Fan visibility
+    // Fan visibility + rear element glow on ring
     this._el('convFan').className = `conv-fan ${data.showConvFan ? 'visible' : ''}`;
+    this._el('fanRing').className = `fan-ring ${(data.isActive && data.isConvection) ? 'element-on' : ''}`;
 
     // Wave visibility
     this._el('wavesRising').className = `heat-waves-rising ${(data.isActive && !data.isConvection && data.hasBottomElement) ? 'visible' : ''}`;
