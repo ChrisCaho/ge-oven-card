@@ -1,4 +1,4 @@
-const GE_OVEN_CARD_VERSION = '2.9.2';
+const GE_OVEN_CARD_VERSION = '2.10.0';
 console.log(`GE Oven Card v${GE_OVEN_CARD_VERSION}: loading...`);
 
 class GeOvenCard extends HTMLElement {
@@ -8,6 +8,12 @@ class GeOvenCard extends HTMLElement {
     this._hass = null;
     this._config = null;
     this._rendered = false; // track if initial DOM is built
+    // State tracking for safety indicators
+    this._prevRawTemps = [];      // [{temp, time}] ring buffer, last 60s
+    this._lastTargetTemp = null;  // for change detection
+    this._lastMode = null;        // for change detection
+    this._targetChangedAt = 0;    // timestamp of last target change
+    this._modeChangedAt = 0;      // timestamp of last mode change
   }
 
   setConfig(config) {
@@ -223,6 +229,13 @@ class GeOvenCard extends HTMLElement {
 
     const fmtTemp = (v) => (v != null && !isBogus(v)) ? `${v}°F` : '--';
 
+    // Safety indicators
+    const rawTemp = attrs.raw_temperature;
+    const rawTempNum = rawTemp != null ? parseFloat(rawTemp) : 0;
+    const targetTempNum = targetTemp != null ? parseFloat(targetTemp) : 0;
+    const overshootWarning = !isOff && rawTempNum > 0 && targetTempNum > 0 && rawTempNum > targetTempNum + 30;
+    const hotRestart = displayState.toLowerCase().includes('preheat') && rawTempNum > 200;
+
     return {
       entityId, friendlyName, isOff, isActive, isEngaged, isDelay,
       lcdTemp, lcdRight, lcdModeText, lcdStatusRight, lightOn,
@@ -234,6 +247,9 @@ class GeOvenCard extends HTMLElement {
       hasTopElement: modeInfo.topElement,
       currentFormatted: fmtTemp(currentTemp),
       targetFormatted: targetTemp != null ? `${targetTemp}°F` : '--',
+      rawFormatted: fmtTemp(rawTemp),
+      rawTemp: rawTempNum, targetTemp: targetTempNum,
+      overshootWarning, hotRestart, resolvedMode,
       probeDisplay, probeClass,
       cookTime: cookTime || '--', cookTimeActive: !!cookTime,
       kitchenTimer: kitchenTimer || '--', kitchenTimerActive: !!kitchenTimer,
@@ -523,6 +539,26 @@ class GeOvenCard extends HTMLElement {
         .probe-badge.active { color: #4caf50; }
         .probe-badge.inactive { color: #999; }
 
+        /* Safety indicators */
+        @keyframes pulseWarn { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+        .overshoot-icon { color: #ff4444; font-size: 10px; margin-left: 3px; display: none; }
+        .overshoot-icon.visible { display: inline; animation: pulseWarn 1.5s ease-in-out infinite; }
+        .change-icon { color: #ffbb33; font-size: 9px; margin-left: 3px; display: none; cursor: help; }
+        .change-icon.visible { display: inline; }
+        .rise-indicator {
+          font-family: 'Courier New', monospace; font-size: 10px; color: #ff9944;
+          margin-left: 2px; vertical-align: super;
+        }
+        .rise-indicator.rapid { color: #ff4444; }
+        .hot-restart-badge {
+          display: none; color: #ff4444; font-family: 'Courier New', monospace;
+          font-size: 11px; font-weight: bold; letter-spacing: 1px;
+          text-shadow: 0 0 6px rgba(255,60,60,0.8);
+        }
+        .hot-restart-badge.visible { display: inline; animation: pulseWarn 1s ease-in-out infinite; }
+        .attr-value.overshoot { color: #ff4444; }
+        .lcd-mode-wrap { display: inline-flex; align-items: center; }
+
         .footer {
           margin-top: 4px; padding: 4px 4px 0;
           border-top: 1px solid rgba(255,255,255,0.06);
@@ -546,12 +582,16 @@ class GeOvenCard extends HTMLElement {
                 <div>
                   <span class="lcd-temp" data-field="lcdTemp"></span>
                   <span class="lcd-degree" data-field="lcdDegree">°F</span>
+                  <span class="rise-indicator" data-field="riseIndicator"></span>
                 </div>
                 <span class="lcd-target" data-field="lcdRight"></span>
               </div>
               <div class="lcd-row">
-                <span class="lcd-mode" data-field="lcdMode"></span>
+                <span class="lcd-mode-wrap"><span class="lcd-mode" data-field="lcdMode"></span><span class="change-icon" data-field="modeChangeIcon" title="">ℹ</span></span>
                 <span class="lcd-status" data-field="lcdStatus"></span>
+              </div>
+              <div class="lcd-row">
+                <span class="hot-restart-badge" data-field="hotRestart">⚠ HOT RESTART</span>
               </div>
             </div>
           </div>
@@ -605,8 +645,12 @@ class GeOvenCard extends HTMLElement {
                 <span class="attr-value" data-field="attrCurrent"></span>
               </div>
               <div class="attr-item">
+                <span class="attr-label">Raw</span>
+                <span><span class="attr-value" data-field="attrRaw"></span><span class="overshoot-icon" data-field="overshootIcon" title="Raw temp exceeds target by 30°F+">⚠</span></span>
+              </div>
+              <div class="attr-item">
                 <span class="attr-label">Target</span>
-                <span class="attr-value" data-field="attrTarget"></span>
+                <span><span class="attr-value" data-field="attrTarget"></span><span class="change-icon" data-field="targetChangeIcon" title="">ℹ</span></span>
               </div>
               <div class="attr-item">
                 <span class="attr-label">Probe</span>
@@ -684,6 +728,71 @@ class GeOvenCard extends HTMLElement {
 
     this._el('lcdStatus').textContent = data.lcdStatusRight;
 
+    // Rate-of-rise indicator
+    const now = Date.now();
+    const riseEl = this._el('riseIndicator');
+    if (data.isActive && data.rawTemp > 0) {
+      this._prevRawTemps.push({ temp: data.rawTemp, time: now });
+      // Keep only last 60s
+      this._prevRawTemps = this._prevRawTemps.filter(e => now - e.time < 60000);
+      const oldest = this._prevRawTemps[0];
+      const newest = this._prevRawTemps[this._prevRawTemps.length - 1];
+      const span = (newest.time - oldest.time) / 60000; // minutes
+      if (this._prevRawTemps.length >= 2 && span > 0.167) { // at least 10s of data
+        const rate = (newest.temp - oldest.temp) / span; // °F/min
+        if (rate > 25) {
+          riseEl.textContent = '▲▲▲';
+          riseEl.className = 'rise-indicator rapid';
+        } else if (rate > 15) {
+          riseEl.textContent = '▲▲';
+          riseEl.className = 'rise-indicator';
+        } else if (rate > 5) {
+          riseEl.textContent = '▲';
+          riseEl.className = 'rise-indicator';
+        } else {
+          riseEl.textContent = '';
+        }
+      } else {
+        riseEl.textContent = '';
+      }
+    } else {
+      this._prevRawTemps = [];
+      riseEl.textContent = '';
+    }
+
+    // Change detection — target temp
+    if (this._lastTargetTemp !== null && data.targetTemp !== this._lastTargetTemp && data.targetTemp > 0) {
+      this._targetChangedFrom = this._lastTargetTemp;
+      this._targetChangedAt = now;
+    }
+    if (data.targetTemp > 0) this._lastTargetTemp = data.targetTemp;
+    const targetChangeIcon = this._el('targetChangeIcon');
+    if (now - this._targetChangedAt < 300000 && this._targetChangedAt > 0) {
+      targetChangeIcon.className = 'change-icon visible';
+      targetChangeIcon.title = `Changed from ${this._targetChangedFrom}°F`;
+    } else {
+      targetChangeIcon.className = 'change-icon';
+    }
+
+    // Change detection — mode
+    const curMode = data.resolvedMode;
+    if (this._lastMode !== null && curMode !== this._lastMode && curMode !== 'Off') {
+      this._modeChangedFrom = this._lastMode;
+      this._modeChangedAt = now;
+    }
+    if (curMode && curMode !== 'Off') this._lastMode = curMode;
+    const modeChangeIcon = this._el('modeChangeIcon');
+    if (now - this._modeChangedAt < 300000 && this._modeChangedAt > 0) {
+      modeChangeIcon.className = 'change-icon visible';
+      modeChangeIcon.title = `Changed from ${this._modeChangedFrom}`;
+    } else {
+      modeChangeIcon.className = 'change-icon';
+    }
+
+    // Hot restart badge
+    const hotRestartEl = this._el('hotRestart');
+    hotRestartEl.className = `hot-restart-badge ${data.hotRestart ? 'visible' : ''}`;
+
     // Window
     const ovenWindow = this._el('ovenWindow');
     ovenWindow.className = `oven-window ${data.isActive ? 'active' : ''}`;
@@ -705,6 +814,13 @@ class GeOvenCard extends HTMLElement {
     const attrCurrent = this._el('attrCurrent');
     attrCurrent.textContent = data.currentFormatted;
     attrCurrent.className = `attr-value ${data.isEngaged ? 'highlight' : ''}`;
+
+    const attrRaw = this._el('attrRaw');
+    attrRaw.textContent = data.rawFormatted;
+    attrRaw.className = `attr-value ${data.overshootWarning ? 'overshoot' : (data.isEngaged ? 'highlight' : '')}`;
+
+    const overshootIcon = this._el('overshootIcon');
+    overshootIcon.className = `overshoot-icon ${data.overshootWarning ? 'visible' : ''}`;
 
     const attrTarget = this._el('attrTarget');
     attrTarget.textContent = data.targetFormatted;
