@@ -1,4 +1,4 @@
-const GE_OVEN_CARD_VERSION = '2.5.2';
+const GE_OVEN_CARD_VERSION = '2.6.0';
 console.log(`GE Oven Card v${GE_OVEN_CARD_VERSION}: loading...`);
 
 class GeOvenCard extends HTMLElement {
@@ -291,16 +291,18 @@ class GeOvenCard extends HTMLElement {
       }
     }
 
-    // Convection fan HTML — 6 blades with outer ring
+    // Convection fan HTML — ring and hub are fixed, only blades spin
     const convFanHtml = showConvFan ? `
       <div class="conv-fan">
         <div class="fan-ring"></div>
-        <div class="fan-blade b1"></div>
-        <div class="fan-blade b2"></div>
-        <div class="fan-blade b3"></div>
-        <div class="fan-blade b4"></div>
-        <div class="fan-blade b5"></div>
-        <div class="fan-blade b6"></div>
+        <div class="fan-blades">
+          <div class="fan-blade b1"></div>
+          <div class="fan-blade b2"></div>
+          <div class="fan-blade b3"></div>
+          <div class="fan-blade b4"></div>
+          <div class="fan-blade b5"></div>
+          <div class="fan-blade b6"></div>
+        </div>
         <div class="fan-hub"></div>
       </div>` : '';
 
@@ -492,73 +494,75 @@ class GeOvenCard extends HTMLElement {
         .oven-window.active {
           background: linear-gradient(180deg, #1a0800 0%, #2d1000 30%, #3a1500 50%, #2d1000 70%, #1a0800 100%);
           border-color: #553300;
-          box-shadow: inset 0 0 30px rgba(255, 100, 0, 0.15), inset 0 4px 16px rgba(0,0,0,0.4);
-        }
-
-        /* Heating glow animation */
-        @keyframes heatGlow {
-          0%, 100% { box-shadow: inset 0 0 30px rgba(255, 80, 0, 0.1), inset 0 4px 16px rgba(0,0,0,0.4); }
-          50% { box-shadow: inset 0 0 40px rgba(255, 80, 0, 0.25), inset 0 4px 16px rgba(0,0,0,0.4); }
-        }
-        .oven-window.active {
-          animation: heatGlow 3s ease-in-out infinite;
+          box-shadow: inset 0 0 30px rgba(255, 100, 0, 0.12), inset 0 4px 16px rgba(0,0,0,0.4);
         }
 
         /* === HEAT ELEMENTS === */
         .heat-element {
-          height: 3px;
-          background: linear-gradient(90deg, transparent 0%, #ff4400 20%, #ff6600 50%, #ff4400 80%, transparent 100%);
+          height: 4px;
+          background: linear-gradient(90deg, transparent 0%, #ff4400 15%, #ff6600 50%, #ff4400 85%, transparent 100%);
           border-radius: 2px;
           opacity: 0;
           z-index: 2;
           position: relative;
+          box-shadow: 0 0 6px rgba(255, 80, 0, 0.4);
         }
         .heat-element.on {
-          opacity: 0.6;
-          animation: elementPulse 2s ease-in-out infinite;
+          animation: elementPulse 4s ease-in-out infinite;
         }
         @keyframes elementPulse {
-          0%, 100% { opacity: 0.4; }
-          50% { opacity: 0.8; }
+          0%, 100% { opacity: 0.35; box-shadow: 0 0 4px rgba(255, 80, 0, 0.2); }
+          50% { opacity: 0.85; box-shadow: 0 0 10px rgba(255, 80, 0, 0.5); }
         }
+        /* Both elements pulse in unison — no delay offset */
         .heat-element.top.on { animation-delay: 0s; }
-        .heat-element.bottom.on { animation-delay: 1s; }
+        .heat-element.bottom.on { animation-delay: 0s; }
 
-        /* Element off state — still takes space but invisible */
         .heat-element.off {
           opacity: 0;
+          box-shadow: none;
         }
 
-        /* === WINDOW SPACER (replaces removed text) === */
+        /* === WINDOW SPACER === */
         .window-spacer {
           flex: 1;
           position: relative;
         }
 
         /* === CONVECTION FAN === */
+        /* Outer container is fixed position — does NOT rotate */
         .conv-fan {
           position: absolute;
           top: 50%;
           left: 50%;
-          transform: translate(-50%, -50%);
           width: 60px;
           height: 60px;
+          margin-top: -30px;
+          margin-left: -30px;
           z-index: 3;
-          animation: fanSpin 1.8s linear infinite;
         }
-        @keyframes fanSpin {
-          from { transform: translate(-50%, -50%) rotate(0deg); }
-          to { transform: translate(-50%, -50%) rotate(360deg); }
-        }
+        /* Ring is fixed, does not spin */
         .fan-ring {
           position: absolute;
           width: 56px;
           height: 56px;
           border: 2px solid rgba(200, 160, 120, 0.3);
           border-radius: 50%;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
+          top: 2px;
+          left: 2px;
+        }
+        /* Blade wrapper spins slowly */
+        .fan-blades {
+          position: absolute;
+          width: 60px;
+          height: 60px;
+          top: 0;
+          left: 0;
+          animation: fanSpin 6s linear infinite;
+        }
+        @keyframes fanSpin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
         }
         .fan-blade {
           position: absolute;
@@ -570,13 +574,13 @@ class GeOvenCard extends HTMLElement {
           left: 50%;
           transform-origin: 0% 50%;
         }
-        /* 6 blades at 60° intervals */
         .fan-blade.b1 { transform: translate(0%, -50%) rotate(0deg); }
         .fan-blade.b2 { transform: translate(0%, -50%) rotate(60deg); }
         .fan-blade.b3 { transform: translate(0%, -50%) rotate(120deg); }
         .fan-blade.b4 { transform: translate(0%, -50%) rotate(180deg); }
         .fan-blade.b5 { transform: translate(0%, -50%) rotate(240deg); }
         .fan-blade.b6 { transform: translate(0%, -50%) rotate(300deg); }
+        /* Hub is fixed, does not spin */
         .fan-hub {
           position: absolute;
           width: 10px;
@@ -586,70 +590,74 @@ class GeOvenCard extends HTMLElement {
           border-radius: 50%;
           top: 50%;
           left: 50%;
-          transform: translate(-50%, -50%);
+          margin-top: -5px;
+          margin-left: -5px;
         }
 
         /* === RISING HEAT WAVES (from bottom element) === */
         .heat-waves-rising {
           position: absolute;
-          bottom: 16px;
+          bottom: 0;
           left: 0;
           right: 0;
-          height: 70%;
+          height: 90%;
           pointer-events: none;
           z-index: 1;
         }
         .wave-rise {
           position: absolute;
+          bottom: 0;
           font-size: 18px;
           color: rgba(255, 140, 50, 0.8);
           text-shadow: 0 0 8px rgba(255, 100, 20, 0.6);
-          animation: riseWave 3s ease-out infinite;
+          animation: riseWave 4s ease-out infinite;
           opacity: 0;
         }
         @keyframes riseWave {
           0% { transform: translateY(0) scaleX(1); opacity: 0; }
-          10% { opacity: 0.9; }
-          60% { opacity: 0.5; }
-          100% { transform: translateY(-100px) scaleX(1.3); opacity: 0; }
+          8% { opacity: 0.85; }
+          50% { opacity: 0.45; }
+          100% { transform: translateY(-140px) scaleX(1.2); opacity: 0; }
         }
         .wave-rise.r1 { left: 15%; animation-delay: 0s; }
-        .wave-rise.r2 { left: 35%; animation-delay: 0.6s; }
-        .wave-rise.r3 { left: 55%; animation-delay: 1.2s; }
-        .wave-rise.r4 { left: 75%; animation-delay: 0.3s; }
-        .wave-rise.r5 { left: 45%; animation-delay: 1.8s; }
+        .wave-rise.r2 { left: 35%; animation-delay: 0.8s; }
+        .wave-rise.r3 { left: 55%; animation-delay: 1.6s; }
+        .wave-rise.r4 { left: 75%; animation-delay: 0.4s; }
+        .wave-rise.r5 { left: 45%; animation-delay: 2.4s; }
 
         /* === FALLING HEAT WAVES (from top element) === */
         .heat-waves-falling {
           position: absolute;
-          top: 16px;
+          top: 0;
           left: 0;
           right: 0;
-          height: 70%;
+          height: 90%;
           pointer-events: none;
           z-index: 1;
         }
         .wave-fall {
           position: absolute;
+          top: 0;
           font-size: 18px;
           color: rgba(255, 140, 50, 0.8);
           text-shadow: 0 0 8px rgba(255, 100, 20, 0.6);
-          animation: fallWave 3s ease-out infinite;
+          animation: fallWave 4s ease-out infinite;
           opacity: 0;
         }
         @keyframes fallWave {
           0% { transform: translateY(0) scaleX(1); opacity: 0; }
-          10% { opacity: 0.9; }
-          60% { opacity: 0.5; }
-          100% { transform: translateY(100px) scaleX(1.3); opacity: 0; }
+          8% { opacity: 0.85; }
+          50% { opacity: 0.45; }
+          100% { transform: translateY(140px) scaleX(1.2); opacity: 0; }
         }
-        .wave-fall.f1 { left: 20%; animation-delay: 0.2s; }
-        .wave-fall.f2 { left: 40%; animation-delay: 0.8s; }
+        .wave-fall.f1 { left: 20%; animation-delay: 0.3s; }
+        .wave-fall.f2 { left: 40%; animation-delay: 1.1s; }
         .wave-fall.f3 { left: 60%; animation-delay: 0s; }
-        .wave-fall.f4 { left: 80%; animation-delay: 1.4s; }
-        .wave-fall.f5 { left: 50%; animation-delay: 0.5s; }
+        .wave-fall.f4 { left: 80%; animation-delay: 1.9s; }
+        .wave-fall.f5 { left: 50%; animation-delay: 0.7s; }
 
         /* === CONVECTION CIRCULATING WAVES === */
+        /* Smooth oval orbits around the fan center */
         .heat-waves-convection {
           position: absolute;
           top: 0;
@@ -664,57 +672,30 @@ class GeOvenCard extends HTMLElement {
           font-size: 16px;
           color: rgba(255, 140, 50, 0.7);
           text-shadow: 0 0 8px rgba(255, 100, 20, 0.5);
-          opacity: 0;
         }
-        /* Each wave orbits around the center on its own elliptical path */
-        .conv-wave.w1 { animation: orbitWave1 4s ease-in-out infinite; }
-        .conv-wave.w2 { animation: orbitWave2 4s ease-in-out infinite 0.7s; }
-        .conv-wave.w3 { animation: orbitWave3 4s ease-in-out infinite 1.4s; }
-        .conv-wave.w4 { animation: orbitWave4 4s ease-in-out infinite 2.1s; }
-        .conv-wave.w5 { animation: orbitWave5 4.5s ease-in-out infinite 0.3s; }
-        .conv-wave.w6 { animation: orbitWave6 4.5s ease-in-out infinite 1.8s; }
+        /* Two groups on different oval paths, staggered evenly */
+        .conv-wave.w1 { animation: ovalA 5s linear infinite; }
+        .conv-wave.w2 { animation: ovalA 5s linear infinite 1.67s; }
+        .conv-wave.w3 { animation: ovalA 5s linear infinite 3.33s; }
+        .conv-wave.w4 { animation: ovalB 6s linear infinite; }
+        .conv-wave.w5 { animation: ovalB 6s linear infinite 2s; }
+        .conv-wave.w6 { animation: ovalB 6s linear infinite 4s; }
 
-        @keyframes orbitWave1 {
-          0%   { top: 75%; left: 20%; opacity: 0; transform: rotate(0deg); }
-          15%  { opacity: 0.8; }
-          50%  { top: 20%; left: 70%; opacity: 0.6; transform: rotate(180deg); }
-          85%  { opacity: 0.3; }
-          100% { top: 75%; left: 20%; opacity: 0; transform: rotate(360deg); }
+        /* Oval path A — wider horizontal ellipse */
+        @keyframes ovalA {
+          0%   { top: 50%; left: 12%; opacity: 0.3; }
+          25%  { top: 22%; left: 50%; opacity: 0.7; }
+          50%  { top: 50%; left: 88%; opacity: 0.3; }
+          75%  { top: 78%; left: 50%; opacity: 0.7; }
+          100% { top: 50%; left: 12%; opacity: 0.3; }
         }
-        @keyframes orbitWave2 {
-          0%   { top: 25%; left: 75%; opacity: 0; transform: rotate(0deg); }
-          15%  { opacity: 0.8; }
-          50%  { top: 70%; left: 25%; opacity: 0.6; transform: rotate(180deg); }
-          85%  { opacity: 0.3; }
-          100% { top: 25%; left: 75%; opacity: 0; transform: rotate(360deg); }
-        }
-        @keyframes orbitWave3 {
-          0%   { top: 50%; left: 15%; opacity: 0; transform: rotate(90deg); }
-          15%  { opacity: 0.8; }
-          50%  { top: 30%; left: 80%; opacity: 0.6; transform: rotate(270deg); }
-          85%  { opacity: 0.3; }
-          100% { top: 50%; left: 15%; opacity: 0; transform: rotate(450deg); }
-        }
-        @keyframes orbitWave4 {
-          0%   { top: 30%; left: 85%; opacity: 0; transform: rotate(270deg); }
-          15%  { opacity: 0.8; }
-          50%  { top: 65%; left: 15%; opacity: 0.6; transform: rotate(90deg); }
-          85%  { opacity: 0.3; }
-          100% { top: 30%; left: 85%; opacity: 0; transform: rotate(-90deg); }
-        }
-        @keyframes orbitWave5 {
-          0%   { top: 80%; left: 50%; opacity: 0; transform: rotate(45deg); }
-          15%  { opacity: 0.75; }
-          50%  { top: 15%; left: 40%; opacity: 0.55; transform: rotate(225deg); }
-          85%  { opacity: 0.25; }
-          100% { top: 80%; left: 50%; opacity: 0; transform: rotate(405deg); }
-        }
-        @keyframes orbitWave6 {
-          0%   { top: 15%; left: 45%; opacity: 0; transform: rotate(135deg); }
-          15%  { opacity: 0.75; }
-          50%  { top: 80%; left: 55%; opacity: 0.55; transform: rotate(315deg); }
-          85%  { opacity: 0.25; }
-          100% { top: 15%; left: 45%; opacity: 0; transform: rotate(495deg); }
+        /* Oval path B — taller vertical ellipse, opposite direction */
+        @keyframes ovalB {
+          0%   { top: 18%; left: 50%; opacity: 0.3; }
+          25%  { top: 50%; left: 18%; opacity: 0.65; }
+          50%  { top: 82%; left: 50%; opacity: 0.3; }
+          75%  { top: 50%; left: 82%; opacity: 0.65; }
+          100% { top: 18%; left: 50%; opacity: 0.3; }
         }
 
         /* === ATTRIBUTE PANEL === */
