@@ -1,4 +1,4 @@
-const GE_OVEN_CARD_VERSION = '2.9.1';
+const GE_OVEN_CARD_VERSION = '2.9.2';
 console.log(`GE Oven Card v${GE_OVEN_CARD_VERSION}: loading...`);
 
 class GeOvenCard extends HTMLElement {
@@ -362,7 +362,7 @@ class GeOvenCard extends HTMLElement {
         }
         .heat-element.off { opacity: 0; }
 
-        .window-spacer { flex: 1; position: relative; overflow: hidden; }
+        .window-spacer { flex: 1; position: relative; }
 
         /* === CONVECTION FAN — fixed container, only blades rotate === */
         .conv-fan {
@@ -376,11 +376,10 @@ class GeOvenCard extends HTMLElement {
           position: absolute; width: 56px; height: 56px;
           border: 2px solid rgba(200,160,120,0.3); border-radius: 50%;
           top: 2px; left: 2px;
-          transition: border-width 0.3s, border-color 0.3s;
+          box-sizing: border-box;
         }
         .fan-ring.element-on {
-          border-width: 3px;
-          border-color: #ff4400;
+          border: 3px solid #ff4400;
           animation: elementPulse 8s ease-in-out infinite;
           box-shadow: 0 0 8px rgba(255, 80, 0, 0.3);
         }
@@ -412,9 +411,10 @@ class GeOvenCard extends HTMLElement {
           margin-top: -5px; margin-left: -5px;
         }
 
-        /* === RISING HEAT WAVES === */
+        /* === RISING HEAT WAVES — positioned in oven-window, not spacer === */
         .heat-waves-rising {
-          position: absolute; bottom: 0; left: 0; right: 0; top: 0;
+          position: absolute; left: 0; right: 0;
+          bottom: 4px; height: 70%;
           pointer-events: none; z-index: 1; display: none;
         }
         .heat-waves-rising.visible { display: block; }
@@ -437,9 +437,10 @@ class GeOvenCard extends HTMLElement {
         .wave-rise.r4 { left: 75%; animation-delay: 0.7s; }
         .wave-rise.r5 { left: 45%; animation-delay: 4.2s; }
 
-        /* === FALLING HEAT WAVES === */
+        /* === FALLING HEAT WAVES — positioned in oven-window, not spacer === */
         .heat-waves-falling {
-          position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+          position: absolute; left: 0; right: 0;
+          top: 4px; height: 70%;
           pointer-events: none; z-index: 1; display: none;
         }
         .heat-waves-falling.visible { display: block; }
@@ -572,20 +573,6 @@ class GeOvenCard extends HTMLElement {
                   </div>
                   <div class="fan-hub"></div>
                 </div>
-                <div class="heat-waves-rising" data-field="wavesRising">
-                  <div class="wave-rise r1">~</div>
-                  <div class="wave-rise r2">~</div>
-                  <div class="wave-rise r3">~</div>
-                  <div class="wave-rise r4">~</div>
-                  <div class="wave-rise r5">~</div>
-                </div>
-                <div class="heat-waves-falling" data-field="wavesFalling">
-                  <div class="wave-fall f1">~</div>
-                  <div class="wave-fall f2">~</div>
-                  <div class="wave-fall f3">~</div>
-                  <div class="wave-fall f4">~</div>
-                  <div class="wave-fall f5">~</div>
-                </div>
                 <div class="heat-waves-convection" data-field="wavesConvection">
                   <div class="conv-wave w1">〰</div>
                   <div class="conv-wave w2">〰</div>
@@ -594,6 +581,20 @@ class GeOvenCard extends HTMLElement {
                   <div class="conv-wave w5">〰</div>
                   <div class="conv-wave w6">〰</div>
                 </div>
+              </div>
+              <div class="heat-waves-rising" data-field="wavesRising">
+                <div class="wave-rise r1">~</div>
+                <div class="wave-rise r2">~</div>
+                <div class="wave-rise r3">~</div>
+                <div class="wave-rise r4">~</div>
+                <div class="wave-rise r5">~</div>
+              </div>
+              <div class="heat-waves-falling" data-field="wavesFalling">
+                <div class="wave-fall f1">~</div>
+                <div class="wave-fall f2">~</div>
+                <div class="wave-fall f3">~</div>
+                <div class="wave-fall f4">~</div>
+                <div class="wave-fall f5">~</div>
               </div>
               <div class="heat-element bottom" data-field="elementBottom"></div>
             </div>
