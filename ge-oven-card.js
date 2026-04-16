@@ -1,4 +1,4 @@
-const GE_OVEN_CARD_VERSION = '2.8.0';
+const GE_OVEN_CARD_VERSION = '2.8.1';
 console.log(`GE Oven Card v${GE_OVEN_CARD_VERSION}: loading...`);
 
 class GeOvenCard extends HTMLElement {
@@ -339,7 +339,7 @@ class GeOvenCard extends HTMLElement {
         }
         .heat-element.off { opacity: 0; }
 
-        .window-spacer { flex: 1; position: relative; }
+        .window-spacer { flex: 1; position: relative; overflow: hidden; }
 
         /* === CONVECTION FAN — fixed container, only blades rotate === */
         .conv-fan {
@@ -384,51 +384,53 @@ class GeOvenCard extends HTMLElement {
 
         /* === RISING HEAT WAVES === */
         .heat-waves-rising {
-          position: absolute; bottom: 0; left: 0; right: 0; height: 90%;
+          position: absolute; bottom: 0; left: 0; right: 0; top: 0;
           pointer-events: none; z-index: 1; display: none;
         }
         .heat-waves-rising.visible { display: block; }
         .wave-rise {
           position: absolute; bottom: 0; font-size: 20px;
+          opacity: 0;
           color: rgba(255, 150, 60, 0.9);
           text-shadow: 0 0 10px rgba(255, 120, 30, 0.7);
-          animation: riseWave 5s ease-out infinite;
+          animation: riseWave 7s ease-out infinite;
         }
         @keyframes riseWave {
           0% { transform: translateY(0); opacity: 0; }
-          5% { opacity: 0.9; }
-          40% { opacity: 0.6; }
-          100% { transform: translateY(-150px); opacity: 0; }
+          3% { opacity: 0.9; }
+          35% { opacity: 0.6; }
+          100% { transform: translateY(-120px); opacity: 0; }
         }
         .wave-rise.r1 { left: 15%; animation-delay: 0s; }
-        .wave-rise.r2 { left: 35%; animation-delay: 1s; }
-        .wave-rise.r3 { left: 55%; animation-delay: 2s; }
-        .wave-rise.r4 { left: 75%; animation-delay: 0.5s; }
-        .wave-rise.r5 { left: 45%; animation-delay: 3s; }
+        .wave-rise.r2 { left: 35%; animation-delay: 1.4s; }
+        .wave-rise.r3 { left: 55%; animation-delay: 2.8s; }
+        .wave-rise.r4 { left: 75%; animation-delay: 0.7s; }
+        .wave-rise.r5 { left: 45%; animation-delay: 4.2s; }
 
         /* === FALLING HEAT WAVES === */
         .heat-waves-falling {
-          position: absolute; top: 0; left: 0; right: 0; height: 90%;
+          position: absolute; top: 0; left: 0; right: 0; bottom: 0;
           pointer-events: none; z-index: 1; display: none;
         }
         .heat-waves-falling.visible { display: block; }
         .wave-fall {
           position: absolute; top: 0; font-size: 20px;
+          opacity: 0;
           color: rgba(255, 150, 60, 0.9);
           text-shadow: 0 0 10px rgba(255, 120, 30, 0.7);
-          animation: fallWave 5s ease-out infinite;
+          animation: fallWave 7s ease-out infinite;
         }
         @keyframes fallWave {
           0% { transform: translateY(0); opacity: 0; }
-          5% { opacity: 0.9; }
-          40% { opacity: 0.6; }
-          100% { transform: translateY(150px); opacity: 0; }
+          3% { opacity: 0.9; }
+          35% { opacity: 0.6; }
+          100% { transform: translateY(120px); opacity: 0; }
         }
         .wave-fall.f1 { left: 20%; animation-delay: 0.4s; }
-        .wave-fall.f2 { left: 40%; animation-delay: 1.4s; }
+        .wave-fall.f2 { left: 40%; animation-delay: 1.8s; }
         .wave-fall.f3 { left: 60%; animation-delay: 0s; }
-        .wave-fall.f4 { left: 80%; animation-delay: 2.4s; }
-        .wave-fall.f5 { left: 50%; animation-delay: 0.8s; }
+        .wave-fall.f4 { left: 80%; animation-delay: 3.2s; }
+        .wave-fall.f5 { left: 50%; animation-delay: 1.1s; }
 
         /* === CONVECTION CIRCULATING WAVES — smooth ovals === */
         .heat-waves-convection {
@@ -438,38 +440,39 @@ class GeOvenCard extends HTMLElement {
         .heat-waves-convection.visible { display: block; }
         .conv-wave {
           position: absolute; font-size: 18px;
+          opacity: 0;
           color: rgba(255, 150, 60, 0.9);
           text-shadow: 0 0 10px rgba(255, 120, 30, 0.7);
         }
-        /* 3 on oval A, 3 on oval B — start invisible, fade in/out during orbit */
-        .conv-wave.w1 { animation: ovalA 6s linear infinite; }
-        .conv-wave.w2 { animation: ovalA 6s linear infinite 2s; }
-        .conv-wave.w3 { animation: ovalA 6s linear infinite 4s; }
-        .conv-wave.w4 { animation: ovalB 7s linear infinite 0.5s; }
-        .conv-wave.w5 { animation: ovalB 7s linear infinite 2.83s; }
-        .conv-wave.w6 { animation: ovalB 7s linear infinite 5.17s; }
+        /* 3 on oval A, 3 on oval B — fade in/out during orbit */
+        .conv-wave.w1 { animation: ovalA 8s linear infinite; }
+        .conv-wave.w2 { animation: ovalA 8s linear infinite 2.67s; }
+        .conv-wave.w3 { animation: ovalA 8s linear infinite 5.33s; }
+        .conv-wave.w4 { animation: ovalB 9s linear infinite 0.5s; }
+        .conv-wave.w5 { animation: ovalB 9s linear infinite 3.5s; }
+        .conv-wave.w6 { animation: ovalB 9s linear infinite 6.5s; }
 
         @keyframes ovalA {
           0%   { top: 50%; left: 10%; opacity: 0; }
-          8%   { opacity: 0.8; }
-          25%  { top: 20%; left: 50%; opacity: 0.7; }
-          42%  { opacity: 0.8; }
+          5%   { opacity: 0.85; }
+          25%  { top: 15%; left: 50%; opacity: 0.8; }
+          45%  { opacity: 0.85; }
           50%  { top: 50%; left: 90%; opacity: 0; }
-          58%  { opacity: 0.8; }
-          75%  { top: 80%; left: 50%; opacity: 0.7; }
-          92%  { opacity: 0.8; }
+          55%  { opacity: 0.85; }
+          75%  { top: 85%; left: 50%; opacity: 0.8; }
+          95%  { opacity: 0.85; }
           100% { top: 50%; left: 10%; opacity: 0; }
         }
         @keyframes ovalB {
-          0%   { top: 15%; left: 50%; opacity: 0; }
-          8%   { opacity: 0.75; }
-          25%  { top: 50%; left: 15%; opacity: 0.65; }
-          42%  { opacity: 0.75; }
-          50%  { top: 85%; left: 50%; opacity: 0; }
-          58%  { opacity: 0.75; }
-          75%  { top: 50%; left: 85%; opacity: 0.65; }
-          92%  { opacity: 0.75; }
-          100% { top: 15%; left: 50%; opacity: 0; }
+          0%   { top: 10%; left: 50%; opacity: 0; }
+          5%   { opacity: 0.8; }
+          25%  { top: 50%; left: 10%; opacity: 0.75; }
+          45%  { opacity: 0.8; }
+          50%  { top: 90%; left: 50%; opacity: 0; }
+          55%  { opacity: 0.8; }
+          75%  { top: 50%; left: 90%; opacity: 0.75; }
+          95%  { opacity: 0.8; }
+          100% { top: 10%; left: 50%; opacity: 0; }
         }
 
         .attr-panel {
