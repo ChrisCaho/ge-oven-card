@@ -1,4 +1,4 @@
-const GE_OVEN_CARD_VERSION = '2.5.0';
+const GE_OVEN_CARD_VERSION = '2.5.1';
 console.log(`GE Oven Card v${GE_OVEN_CARD_VERSION}: loading...`);
 
 class GeOvenCard extends HTMLElement {
@@ -84,9 +84,12 @@ class GeOvenCard extends HTMLElement {
     return `${hours}:${String(mins).padStart(2, '0')} ${ampm}`;
   }
 
-  // Determine cooking mode characteristics from display_state/operation_mode
+  // Determine cooking mode characteristics from operation_mode/display_state
+  // Use opMode first (the actual cooking mode like "Bake", "Convection Roast")
+  // Fall back to displayState only when opMode is missing or "Unknown"
   _getModeInfo(displayState, opMode) {
-    const mode = (displayState || opMode || '').toLowerCase();
+    const effectiveMode = (opMode && opMode !== 'Unknown' && opMode !== 'Off') ? opMode : displayState;
+    const mode = (effectiveMode || '').toLowerCase();
     const isConvection = mode.includes('convection') || mode.includes('conv.');
     const isBroil = mode.includes('broil');
     const isRoast = mode.includes('roast');
@@ -229,10 +232,20 @@ class GeOvenCard extends HTMLElement {
       probeDisplay = '<span class="probe-badge inactive">○ No</span>';
     }
 
-    // LCD mode line — use resolvedMode instead of opMode to fix "Unknown" bug
-    const lcdModeText = isDelay
-      ? (delayStartTime ? `Start At ${delayStartTime}` : displayState)
-      : (isActive ? resolvedMode : displayState);
+    // LCD mode line — show "MODE - PHASE" when displayState differs from resolvedMode
+    // e.g. "BAKE - PREHEAT", but just "BAKE" once they match
+    let lcdModeText;
+    if (isDelay) {
+      lcdModeText = delayStartTime ? `Start At ${delayStartTime}` : displayState;
+    } else if (isActive) {
+      const phase = displayState.toLowerCase();
+      const modeLC = resolvedMode.toLowerCase();
+      // Show phase suffix when it adds info (not matching the mode name, not generic states)
+      const showPhase = phase !== modeLC && phase !== 'off' && phase !== state.toLowerCase();
+      lcdModeText = showPhase ? `${resolvedMode} - ${displayState}` : resolvedMode;
+    } else {
+      lcdModeText = displayState;
+    }
 
     // Window content — mode-specific elements and animations
     const showTopElement = isActive && modeInfo.topElement;
