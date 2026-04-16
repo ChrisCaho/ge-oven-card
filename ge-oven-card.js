@@ -1,4 +1,4 @@
-const GE_OVEN_CARD_VERSION = '2.8.1';
+const GE_OVEN_CARD_VERSION = '2.9.0';
 console.log(`GE Oven Card v${GE_OVEN_CARD_VERSION}: loading...`);
 
 class GeOvenCard extends HTMLElement {
@@ -86,32 +86,55 @@ class GeOvenCard extends HTMLElement {
   _getModeInfo(displayState, opMode) {
     const effectiveMode = (opMode && opMode !== 'Unknown' && opMode !== 'Off') ? opMode : displayState;
     const mode = (effectiveMode || '').toLowerCase();
-    const isConvection = mode.includes('convection') || mode.includes('conv.');
+
+    // GE Profile True European Convection ovens (PTS9000/PTS9200):
+    // - Bake (Thermal): bottom + top(cycles), no fan
+    // - Broil: top only, no fan
+    // - Convection Bake: rear element only + fan (no top/bottom visible elements)
+    // - Conv. Multi-Bake: same as Convection Bake
+    // - Convection Roast: top + rear element + fan (high speed)
+    // - Air Fry: top + bottom + rear element + fan (high speed, all elements)
+    // - Convection Broil: top + fan
+    // - Warm: bottom only (low), no fan
+    // - Proof: top briefly, no fan
+    // - Dehydrate: rear element + fan
+    // Since we can only show top/bottom elements visually, the rear element is
+    // represented by the convection fan being active.
+
+    const isAirFry = mode.includes('air fry');
     const isBroil = mode.includes('broil');
     const isRoast = mode.includes('roast');
-    const isBake = (mode.includes('bake') || mode.includes('multi-bake')) && !isRoast && !isBroil;
+    const isConvBake = (mode.includes('convection') || mode.includes('conv.')) &&
+                       (mode.includes('bake') || mode.includes('multi'));
+    const isConvBroil = (mode.includes('convection') || mode.includes('conv.')) && isBroil;
+    const isDehydrate = mode.includes('dehydrate');
+    const isWarm = mode.includes('warm');
+    const isProof = mode.includes('proof');
+    const isBake = mode.includes('bake') && !isConvBake && !isRoast && !isBroil;
+    const isConvection = isAirFry || isConvBake || isRoast || isConvBroil || isDehydrate;
 
     let topElement, bottomElement;
-    if (isBroil) {
-      topElement = true;
-      bottomElement = false;
-    } else if (isBake) {
-      topElement = false;
-      bottomElement = true;
+    if (isAirFry) {
+      topElement = true; bottomElement = true;     // all elements active
+    } else if (isConvBake || isDehydrate) {
+      topElement = false; bottomElement = false;    // rear element only (shown via fan)
+    } else if (isConvBroil) {
+      topElement = true; bottomElement = false;     // top + fan
     } else if (isRoast) {
-      topElement = true;
-      bottomElement = true;
+      topElement = true; bottomElement = false;     // top + rear element
+    } else if (isBroil) {
+      topElement = true; bottomElement = false;
+    } else if (isWarm) {
+      topElement = false; bottomElement = true;     // low bottom heat
+    } else if (isProof) {
+      topElement = true; bottomElement = false;     // brief top element
+    } else if (isBake) {
+      topElement = false; bottomElement = true;     // primarily bottom
     } else {
-      topElement = true;
-      bottomElement = true;
+      topElement = true; bottomElement = true;      // default: both
     }
 
-    if (isConvection && isBake) {
-      topElement = false;
-      bottomElement = true;
-    }
-
-    return { isConvection, isBroil, isRoast, isBake, topElement, bottomElement };
+    return { isConvection, isBroil, isRoast, isBake, isAirFry, topElement, bottomElement };
   }
 
   // Gather all display values from current state
