@@ -1,4 +1,4 @@
-const GE_OVEN_CARD_VERSION = '2.10.0';
+const GE_OVEN_CARD_VERSION = '2.12.0';
 console.log(`GE Oven Card v${GE_OVEN_CARD_VERSION}: loading...`);
 
 class GeOvenCard extends HTMLElement {
@@ -14,6 +14,8 @@ class GeOvenCard extends HTMLElement {
     this._lastMode = null;        // for change detection
     this._targetChangedAt = 0;    // timestamp of last target change
     this._modeChangedAt = 0;      // timestamp of last mode change
+    this._lastElapsed = null;     // cache last non-zero elapsed value (flicker workaround)
+    this._lastElapsedTime = 0;    // timestamp of last valid elapsed value
   }
 
   setConfig(config) {
@@ -59,15 +61,7 @@ class GeOvenCard extends HTMLElement {
 
   _formatTime(seconds) {
     const s = parseFloat(seconds);
-    if (!s || s <= 0) return null;
-    const h = Math.floor(s / 3600);
-    const m = Math.floor((s % 3600) / 60);
-    return h > 0 ? `${h}h ${m}m` : `${m}m`;
-  }
-
-  _formatElapsed(seconds) {
-    const s = parseFloat(seconds);
-    if (!s || s <= 0) return null;
+    if (!s || s <= 0) return '--';
     const h = Math.floor(s / 3600);
     const m = Math.floor((s % 3600) / 60);
     return h > 0 ? `${h}h ${m}m` : `${m}m`;
@@ -175,12 +169,25 @@ class GeOvenCard extends HTMLElement {
     const cookTimeRaw = this._getSensor('cook_time_remaining');
     const kitchenTimerRaw = this._getSensor('kitchen_timer');
     const probeTemp = this._getSensor('probe_display_temp');
-    const cookTimeElapsedRaw = this._getSensor('cooking_elapsed');
 
     const cookTime = this._formatTime(cookTimeRaw);
+    const cookTimeActive = cookTime !== '--';
     const kitchenTimer = this._formatTime(kitchenTimerRaw);
+    const kitchenTimerActive = kitchenTimer !== '--';
     const probeTempVal = probeTemp ? parseFloat(probeTemp) : 0;
-    const elapsed = this._formatElapsed(cookTimeElapsedRaw);
+
+    // Elapsed from water_heater attribute (flickers — cache last non-zero)
+    const elapsedAttr = attrs.cook_time_elapsed;
+    let elapsed = null;
+    if (elapsedAttr && elapsedAttr !== '0' && elapsedAttr !== '0:00') {
+      elapsed = elapsedAttr;
+      this._lastElapsed = elapsed;
+      this._lastElapsedTime = Date.now();
+    } else if (!isOff && this._lastElapsed && (Date.now() - this._lastElapsedTime) < 30000) {
+      elapsed = this._lastElapsed;
+    } else {
+      this._lastElapsed = null;
+    }
 
     const isBogus = (v) => v == null || v === 0 || v === 100 || v === '100';
     const realDisplayTemp = isBogus(displayTemp) ? null : displayTemp;
@@ -190,9 +197,9 @@ class GeOvenCard extends HTMLElement {
     let lcdRight = '';
     if (isDelay && targetTemp) {
       lcdRight = `SET ${targetTemp}°`;
-    } else if (cookTime) {
+    } else if (cookTimeActive) {
       lcdRight = `COOK ${cookTime}`;
-    } else if (kitchenTimer) {
+    } else if (kitchenTimerActive) {
       lcdRight = `TIMER ${kitchenTimer}`;
     } else if (isActive && targetTemp) {
       lcdRight = `SET ${targetTemp}°`;
@@ -233,7 +240,8 @@ class GeOvenCard extends HTMLElement {
     const rawTemp = attrs.raw_temperature;
     const rawTempNum = rawTemp != null ? parseFloat(rawTemp) : 0;
     const targetTempNum = targetTemp != null ? parseFloat(targetTemp) : 0;
-    const overshootWarning = !isOff && rawTempNum > 0 && targetTempNum > 0 && rawTempNum > targetTempNum + 30;
+    const isPreheat = displayState.toLowerCase().includes('preheat');
+    const overshootWarning = !isOff && !isPreheat && rawTempNum > 0 && targetTempNum > 0 && rawTempNum > targetTempNum + 30;
     const hotRestart = displayState.toLowerCase().includes('preheat') && rawTempNum > 200;
 
     return {
@@ -247,12 +255,11 @@ class GeOvenCard extends HTMLElement {
       hasTopElement: modeInfo.topElement,
       currentFormatted: fmtTemp(currentTemp),
       targetFormatted: targetTemp != null ? `${targetTemp}°F` : '--',
-      rawFormatted: fmtTemp(rawTemp),
       rawTemp: rawTempNum, targetTemp: targetTempNum,
       overshootWarning, hotRestart, resolvedMode,
       probeDisplay, probeClass,
-      cookTime: cookTime || '--', cookTimeActive: !!cookTime,
-      kitchenTimer: kitchenTimer || '--', kitchenTimerActive: !!kitchenTimer,
+      cookTime, cookTimeActive,
+      kitchenTimer, kitchenTimerActive,
       elapsed: elapsed || '--', elapsedActive: !!elapsed,
       minTemp: attrs.min_temp, maxTemp: attrs.max_temp,
     };
@@ -445,7 +452,7 @@ class GeOvenCard extends HTMLElement {
           0% { transform: translateY(0); opacity: 0; }
           3% { opacity: 0.9; }
           35% { opacity: 0.6; }
-          100% { transform: translateY(-120px); opacity: 0; }
+          100% { transform: translateY(-${windowHeight}px); opacity: 0; }
         }
         .wave-rise.r1 { left: 15%; animation-delay: 0s; }
         .wave-rise.r2 { left: 35%; animation-delay: 1.4s; }
@@ -471,7 +478,7 @@ class GeOvenCard extends HTMLElement {
           0% { transform: translateY(0); opacity: 0; }
           3% { opacity: 0.9; }
           35% { opacity: 0.6; }
-          100% { transform: translateY(120px); opacity: 0; }
+          100% { transform: translateY(${windowHeight}px); opacity: 0; }
         }
         .wave-fall.f1 { left: 20%; animation-delay: 0.4s; }
         .wave-fall.f2 { left: 40%; animation-delay: 1.8s; }
@@ -565,6 +572,17 @@ class GeOvenCard extends HTMLElement {
           display: flex; justify-content: space-between; align-items: center;
         }
         .entity-id { font-size: 9px; color: #444; font-family: monospace; }
+
+        /* Accessibility: reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+          .heat-element.on, .fan-blades, .wave-rise, .wave-fall,
+          .conv-wave, .overshoot-icon.visible, .hot-restart-badge.visible {
+            animation: none !important;
+          }
+          .heat-element.on { opacity: 0.6; }
+          .fan-blades { transform: rotate(45deg); }
+          .glow-ring.active, .overshoot-icon.visible, .hot-restart-badge.visible { opacity: 0.8; }
+        }
       </style>
 
       <ha-card>
@@ -642,11 +660,7 @@ class GeOvenCard extends HTMLElement {
             <div class="attr-panel">
               <div class="attr-item">
                 <span class="attr-label">Current</span>
-                <span class="attr-value" data-field="attrCurrent"></span>
-              </div>
-              <div class="attr-item">
-                <span class="attr-label">Raw</span>
-                <span><span class="attr-value" data-field="attrRaw"></span><span class="overshoot-icon" data-field="overshootIcon" title="Raw temp exceeds target by 30°F+">⚠</span></span>
+                <span><span class="attr-value" data-field="attrCurrent"></span><span class="overshoot-icon" data-field="overshootIcon" title="Raw temp exceeds target by 30°F+">⚠</span></span>
               </div>
               <div class="attr-item">
                 <span class="attr-label">Target</span>
@@ -683,7 +697,7 @@ class GeOvenCard extends HTMLElement {
 
   // Get a data-field element
   _el(field) {
-    return this.shadowRoot.querySelector(`[data-field="${field}"]`);
+    return this.shadowRoot?.querySelector(`[data-field="${field}"]`);
   }
 
   // Update DOM in-place without replacing innerHTML (preserves animations)
@@ -732,7 +746,11 @@ class GeOvenCard extends HTMLElement {
     const now = Date.now();
     const riseEl = this._el('riseIndicator');
     if (data.isActive && data.rawTemp > 0) {
-      this._prevRawTemps.push({ temp: data.rawTemp, time: now });
+      // Only push if temperature changed or >5s elapsed (avoid duplicate entries)
+      const lastEntry = this._prevRawTemps[this._prevRawTemps.length - 1];
+      if (!lastEntry || lastEntry.temp !== data.rawTemp || now - lastEntry.time > 5000) {
+        this._prevRawTemps.push({ temp: data.rawTemp, time: now });
+      }
       // Keep only last 60s
       this._prevRawTemps = this._prevRawTemps.filter(e => now - e.time < 60000);
       const oldest = this._prevRawTemps[0];
@@ -813,11 +831,7 @@ class GeOvenCard extends HTMLElement {
     // Attributes
     const attrCurrent = this._el('attrCurrent');
     attrCurrent.textContent = data.currentFormatted;
-    attrCurrent.className = `attr-value ${data.isEngaged ? 'highlight' : ''}`;
-
-    const attrRaw = this._el('attrRaw');
-    attrRaw.textContent = data.rawFormatted;
-    attrRaw.className = `attr-value ${data.overshootWarning ? 'overshoot' : (data.isEngaged ? 'highlight' : '')}`;
+    attrCurrent.className = `attr-value ${data.overshootWarning ? 'overshoot' : (data.isEngaged ? 'highlight' : '')}`;
 
     const overshootIcon = this._el('overshootIcon');
     overshootIcon.className = `overshoot-icon ${data.overshootWarning ? 'visible' : ''}`;
